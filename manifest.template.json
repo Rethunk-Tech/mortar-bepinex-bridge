@@ -1,5 +1,6 @@
 {
   "name": "MortarBepInExBridge",
+  "namespace": "Rethunk",
   "version_number": "@VERSION@",
   "website_url": "https://github.com/Rethunk-Tech/mortar-bepinex-bridge",
   "description": "Lets the Mortar mod manager query a running BepInEx game over a token-protected loopback socket. Installed by Mortar.",
