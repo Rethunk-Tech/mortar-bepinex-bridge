@@ -7,12 +7,11 @@ How to build, test and package the plugin. What it does: [README.md](README.md);
 Requires the .NET SDK 8 or later (the plugin targets netstandard2.1, Unity's Mono profile).
 
 ```sh
-cp Directory.Build.props.example Directory.Build.props   # gitignored; set ManagedDir
 dotnet build -c Release
 dotnet test -c Release
 ```
 
-BepInEx comes from the `BepInEx.Core` package (nuget.bepinex.dev, listed in `nuget.config`). UnityEngine comes from the game's own `Managed` folder, named by `ManagedDir`; the build stops with a message when it is unset. Game assemblies are never committed.
+BepInEx comes from the `BepInEx.Core` package (nuget.bepinex.dev, listed in `nuget.config`). UnityEngine comes from the `UnityEngine.Modules` package (2022.3.9, Lethal Company's Unity) on the same feed, so no game install is needed to build. Game assemblies are never committed.
 
 `gate` from the repo root is the offline gate. `lefthook install` sets up the git hooks (needs `lefthook` and `gitleaks` on PATH).
 

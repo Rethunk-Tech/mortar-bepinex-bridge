@@ -13,7 +13,6 @@ The BepInEx loader's companion for [Mortar](https://github.com/Rethunk-Tech/mort
 ## Quick start
 
 ```sh
-cp Directory.Build.props.example Directory.Build.props   # then point ManagedDir at the game's Managed folder
 dotnet build -c Release && dotnet test -c Release
 ```
 

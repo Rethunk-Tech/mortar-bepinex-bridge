@@ -1,6 +1,6 @@
 # Mortar BepInEx Bridge
 
-C# BepInEx 5 plugin (netstandard2.1) that lets Mortar query a running game: the BepInEx loader's companion, as mortar-smapi-bridge is SMAPI's. Compiles against `BepInEx.Core` (NuGet) and the game's own `UnityEngine*.dll`, none of them shipped; never commit or ship game assemblies.
+C# BepInEx 5 plugin (netstandard2.1) that lets Mortar query a running game: the BepInEx loader's companion, as mortar-smapi-bridge is SMAPI's. Compiles against `BepInEx.Core` and `UnityEngine.Modules` (both NuGet), neither shipped; never commit or ship game assemblies.
 
 - Build, test, packaging and release: [HUMANS.md](HUMANS.md).
 - Command protocol and discovery file: [README.md](README.md). The framing matches the SMAPI bridge so Mortar's `internal/bridge` client stays one implementation.

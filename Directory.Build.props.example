@@ -1,6 +1,0 @@
-<Project>
-  <!-- Copy to Directory.Build.props (gitignored) and point it at the game's own Managed folder; game assemblies are never committed. -->
-  <PropertyGroup>
-    <ManagedDir>$(HOME)/.local/share/Steam/steamapps/common/Lethal Company/Lethal Company_Data/Managed</ManagedDir>
-  </PropertyGroup>
-</Project>
