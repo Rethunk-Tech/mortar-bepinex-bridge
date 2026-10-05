@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Version>0.1.0</Version>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" PrivateAssets="all" />
+    <Reference Include="UnityEngine" HintPath="$(ManagedDir)/UnityEngine.dll" Private="false" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(ManagedDir)/UnityEngine.CoreModule.dll" Private="false" />
+    <InternalsVisibleTo Include="MortarBepInExBridge.Tests" />
+  </ItemGroup>
+
+  <Target Name="RequireManagedDir" BeforeTargets="ResolveAssemblyReferences" Condition="'$(ManagedDir)' == '' Or !Exists('$(ManagedDir)/UnityEngine.CoreModule.dll')">
+    <Error Text="Set ManagedDir to the game's Managed folder: copy Directory.Build.props.example to Directory.Build.props." />
+  </Target>
+</Project>
