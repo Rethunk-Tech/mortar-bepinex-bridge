@@ -24,6 +24,8 @@ public static class StartupPatcher
     /// <summary>Mortar writes it in the profile's startup folder for a measured launch, holding the game's title
     /// scene name; the launch consumes it.</summary>
     internal const string MeasureFile = ".measure-launch";
+    /// <summary>Tells the bridge plugin, in this process only, that the launch is measured, so it measures in game too.</summary>
+    internal const string MeasuredEnvVar = "MORTAR_MEASURED_LAUNCH";
 
     private static readonly ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("Mortar Startup");
     private static StartupTimer? timer;
@@ -48,6 +50,7 @@ public static class StartupPatcher
                 return;
             string title = File.ReadAllText(request).Trim();
             File.Delete(request);
+            Environment.SetEnvironmentVariable(MeasuredEnvVar, "1");
             processStart = ProcessStart();
             timer = new StartupTimer(Now(), title);
             listener = new Listener();

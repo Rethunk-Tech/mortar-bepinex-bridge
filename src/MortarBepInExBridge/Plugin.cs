@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using BepInEx;
 using BepInEx.Bootstrap;
+using MortarBepInExBridge.Perf;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -27,6 +28,8 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     IReadOnlyList<PluginRow> IGameView.Plugins => Loaded();
 
+    string IGameView.Perf(bool start) => PerfHost.Reply(start);
+
     private void Awake()
     {
         this.GameVersionValue = Application.version;
@@ -35,6 +38,8 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         // Only a real quit stops the server: in Lethal Company, with BepInEx's default HideManagerGameObject=false, the
         // first scene load destroys the manager object and this component with it, while the game runs on.
         Application.quitting += this.Shutdown;
+        if (MeasuredLaunch.Requested(Environment.GetEnvironmentVariable))
+            PerfHost.Start(this.Logger);
         if (IntroSkip.Requested(Environment.GetEnvironmentVariable))
         {
             this.Logger.LogInfo($"{IntroSkip.EnvVar} is set: this test launch skips the game's intro.");
