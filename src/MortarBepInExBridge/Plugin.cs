@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using BepInEx;
@@ -37,11 +36,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         if (IntroSkip.Requested(Environment.GetEnvironmentVariable))
         {
             this.Logger.LogInfo($"{IntroSkip.EnvVar} is set: this test launch skips the game's intro.");
-            SceneManager.sceneLoaded += (scene, _) =>
-            {
-                foreach (IntroStep step in IntroSkip.For(scene.name))
-                    this.StartCoroutine(this.RunStep(step));
-            };
+            IntroRunner.Start(this.Logger);
         }
 
         byte[] raw = new byte[32];
@@ -60,21 +55,6 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         this.StatePath = System.IO.Path.Combine(Paths.ConfigPath, StateFileName);
         Files.AtomicWrite(this.StatePath, $"{{\"port\":{this.Server.Port},\"token\":\"{token}\",\"pid\":{System.Diagnostics.Process.GetCurrentProcess().Id}}}");
         this.Logger.LogInfo($"Listening on 127.0.0.1:{this.Server.Port}.");
-    }
-
-    // A step without a delay runs before the coroutine first yields, inside sceneLoaded, so ahead of the scene's Start.
-    private IEnumerator RunStep(IntroStep step)
-    {
-        if (step.Delay > 0)
-            yield return new WaitForSeconds(step.Delay);
-        Type? type = IntroSkip.Find(step.Type);
-        if (type == null)
-            yield break;
-        foreach (UnityEngine.Object target in FindObjectsOfType(type))
-        {
-            IntroSkip.Apply(target, step);
-            this.Logger.LogInfo($"Intro skip: {step.Type} in {step.Scene}.");
-        }
     }
 
     private void OnDestroy() => this.Shutdown();
