@@ -17,6 +17,10 @@ internal sealed class PluginRow(string guid, string name, string version)
 internal interface IGameView
 {
     string GameVersion { get; }
+
+    /// <summary>Whether GameVersion is the version the game itself shows, rather than Unity's Application.version.</summary>
+    bool GameVersionIsGames { get; }
+
     string Scene { get; }
     IReadOnlyList<PluginRow> Plugins { get; }
 
@@ -54,6 +58,7 @@ internal static class Protocol
             case "status":
                 return "ok {"
                     + "\"gameVersion\":" + Json.Quote(game.GameVersion)
+                    + ",\"gameVersionSource\":" + Json.Quote(game.GameVersionIsGames ? "game" : "unity")
                     + ",\"scene\":" + Json.Quote(game.Scene)
                     + ",\"plugins\":" + PluginList(game.Plugins, withName: false) + "}";
             case "plugins":

@@ -52,7 +52,7 @@ The same framing as the SMAPI bridge: one connection per command. The client sen
 | Command | Reply |
 | --- | --- |
 | `ping` | `ok` |
-| `status` | `ok {"gameVersion":"...","scene":"...","plugins":[{"guid":"...","version":"..."}]}`; `gameVersion` is the version the game shows (Lethal Company: `v81` from `GameNetworkManager.gameVersionNum`), else Unity's `Application.version` |
+| `status` | `ok {"gameVersion":"...","gameVersionSource":"game","scene":"...","plugins":[{"guid":"...","version":"..."}]}`; `gameVersion` is the version the game shows (`gameVersionSource` `game`; Lethal Company: `v81` from `GameNetworkManager.gameVersionNum`), else Unity's `Application.version` (`unity`) |
 | `plugins` | `ok [{"guid":"...","name":"...","version":"..."}]` |
 | `perf` | `ok {"measured":false}` on an unmeasured launch; on a measured one `ok {"measured":true,"instrumented":...,"seconds":...,"frames":...,"fps":...,"frameMs":{"avg","p50","p95","p99","max"},"monoUsedBytes":...,"monoHeapBytes":...,"gcCollections":...,"plugins":[{"guid","msPerFrame","peakMs","callsPerFrame","patches","transpilers"}],"patchOwners":{"<harmony id>":["Type::Method"]}}`, rebuilt once a second |
 | `perf start` | `ok {"measured":true}`: restarts the window; the first one also wraps every plugin's Harmony patches and its own MonoBehaviours' Update, LateUpdate and FixedUpdate with timers |

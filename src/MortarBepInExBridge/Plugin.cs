@@ -18,11 +18,14 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private BridgeServer? Server;
     private string? StatePath;
-    private string GameVersionValue = "";
+    private volatile string GameVersionValue = "";
+    private volatile bool GameVersionIsGames;
     // Unity objects are main-thread only, so the socket threads read this copy, which the scene event keeps current.
     private volatile string SceneValue = "";
 
     string IGameView.GameVersion => this.GameVersionValue;
+
+    bool IGameView.GameVersionIsGames => this.GameVersionIsGames;
 
     string IGameView.Scene => this.SceneValue;
 
@@ -32,12 +35,12 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private void Awake()
     {
-        this.GameVersionValue = GameVersion.Read(IntroSkip.Find, Application.version);
+        this.ReadGameVersion();
         this.SceneValue = SceneManager.GetActiveScene().name;
         SceneManager.activeSceneChanged += (_, next) =>
         {
             this.SceneValue = next.name;
-            this.GameVersionValue = GameVersion.Read(IntroSkip.Find, Application.version);
+            this.ReadGameVersion();
         };
         // Only a real quit stops the server: in Lethal Company, with BepInEx's default HideManagerGameObject=false, the
         // first scene load destroys the manager object and this component with it, while the game runs on.
@@ -67,6 +70,13 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         this.StatePath = System.IO.Path.Combine(Paths.ConfigPath, StateFileName);
         Files.AtomicWrite(this.StatePath, $"{{\"port\":{this.Server.Port},\"token\":\"{token}\"}}");
         this.Logger.LogInfo($"Listening on 127.0.0.1:{this.Server.Port}.");
+    }
+
+    private void ReadGameVersion()
+    {
+        string? own = GameVersion.Read(IntroSkip.Find);
+        this.GameVersionValue = own ?? Application.version;
+        this.GameVersionIsGames = own != null;
     }
 
     private static string? ReadIntroRequest()

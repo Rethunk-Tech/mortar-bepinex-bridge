@@ -9,6 +9,7 @@ public class ProtocolTests
     private sealed class Game : IGameView
     {
         public string GameVersion => "v62";
+        public bool GameVersionIsGames => true;
         public string Scene => "SampleSceneRelay";
         public IReadOnlyList<PluginRow> Plugins { get; } = [new("a.b", "A \"quoted\"", "1.2.3"), new("c.d", "C", "0.1.0")];
 
@@ -18,7 +19,7 @@ public class ProtocolTests
     [Theory]
     [InlineData("ping", "ok")]
     [InlineData(" PING ", "ok")]
-    [InlineData("status", "ok {\"gameVersion\":\"v62\",\"scene\":\"SampleSceneRelay\",\"plugins\":[{\"guid\":\"a.b\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"version\":\"0.1.0\"}]}")]
+    [InlineData("status", "ok {\"gameVersion\":\"v62\",\"gameVersionSource\":\"game\",\"scene\":\"SampleSceneRelay\",\"plugins\":[{\"guid\":\"a.b\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"version\":\"0.1.0\"}]}")]
     [InlineData("plugins", "ok [{\"guid\":\"a.b\",\"name\":\"A \\\"quoted\\\"\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"name\":\"C\",\"version\":\"0.1.0\"}]")]
     [InlineData("perf", "ok {\"frames\":2}")]
     [InlineData("PERF START", "ok {\"started\":1}")]

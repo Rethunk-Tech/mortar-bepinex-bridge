@@ -17,12 +17,12 @@ public class GameVersionTests
     public void LethalCompanyReportsTheVersionItsMenuShowsOnceTheGameHasMadeIt()
     {
         GameNetworkManager.Instance = null;
-        Assert.Equal("0.1", GameVersion.Read(Lethal, "0.1"));
+        Assert.Null(GameVersion.Read(Lethal));
         GameNetworkManager.Instance = new GameNetworkManager { gameVersionNum = 81 };
-        Assert.Equal("v81", GameVersion.Read(Lethal, "0.1"));
+        Assert.Equal("v81", GameVersion.Read(Lethal));
     }
 
     [Fact]
-    public void AGameWithoutASourceReportsApplicationVersion() =>
-        Assert.Equal("0.220.5", GameVersion.Read(_ => null, "0.220.5"));
+    public void AGameWithoutASourceHasNoVersionOfItsOwn() =>
+        Assert.Null(GameVersion.Read(_ => null));
 }

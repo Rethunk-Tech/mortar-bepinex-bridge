@@ -29,9 +29,9 @@ internal static class GameVersion
         new("GameNetworkManager", "Instance", "gameVersionNum", "v{0}"),
     ];
 
-    /// <summary>The first source the game holds an instance of, else fallback. The instance appears only once the
-    /// game's own start-up has made it, so the plugin asks again on each scene change.</summary>
-    public static string Read(Func<string, Type?> find, string fallback)
+    /// <summary>The version from the first source the game holds an instance of, else null. The instance appears only
+    /// once the game's own start-up has made it, so the plugin asks again on each scene change.</summary>
+    public static string? Read(Func<string, Type?> find)
     {
         foreach (GameVersionSource source in Sources)
         {
@@ -43,6 +43,6 @@ internal static class GameVersion
             if (value is not null)
                 return string.Format(CultureInfo.InvariantCulture, source.Format, value);
         }
-        return fallback;
+        return null;
     }
 }
