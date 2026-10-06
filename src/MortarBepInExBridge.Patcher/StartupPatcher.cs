@@ -103,7 +103,7 @@ public static class StartupPatcher
         try
         {
             if (timer != null && timer.OnScene(scene.name, Now()))
-                Finish();
+                WriteReport();
         }
         catch (Exception ex)
         {
@@ -111,7 +111,9 @@ public static class StartupPatcher
         }
     }
 
-    private static void Finish()
+    // Never named Finish: BepInEx's preloader binds any static Finish() as this patcher's finalizer and runs it before
+    // Unity has registered its internal calls, so touching Application there broke every Unity call for the session.
+    private static void WriteReport()
     {
         StartupTimer done = timer!;
         Stop();
