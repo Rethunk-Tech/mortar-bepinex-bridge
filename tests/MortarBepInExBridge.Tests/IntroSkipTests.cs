@@ -21,13 +21,23 @@ public class IntroSkipTests
     }
 
     [Theory]
-    [InlineData("1", true)]
-    [InlineData(null, false)]
-    [InlineData("", false)]
-    [InlineData("0", false)]
-    [InlineData("true", false)]
-    public void OnlyAnExplicitOneSkips(string? value, bool skips) =>
-        Assert.Equal(skips, IntroSkip.Requested(name => name == IntroSkip.EnvVar ? value : "1"));
+    [InlineData("1", null, "Menu")]
+    [InlineData("1", "intro", "Menu")]
+    [InlineData(null, "menu\n", "Menu")]
+    [InlineData(null, "intro", "Animations")]
+    [InlineData(null, null, "Play")]
+    [InlineData("0", "", "Play")]
+    [InlineData("true", "yes", "Play")]
+    public void TheEnvironmentOrTheRequestFileAsksForAMode(string? env, string? request, string mode) =>
+        Assert.Equal(mode, IntroSkip.Requested(name => name == IntroSkip.EnvVar ? env : "1", request).ToString());
+
+    [Fact]
+    public void ThePlayersSettingSkipsAnimationsButLeavesTheLaunchChoiceAlone()
+    {
+        Assert.Empty(IntroSkip.For("InitSceneLaunchOptions", IntroMode.Animations));
+        Assert.Single(IntroSkip.For("InitScene", IntroMode.Animations));
+        Assert.Empty(IntroSkip.For("InitScene", IntroMode.Play));
+    }
 
     [Fact]
     public void BootUpAndColdOpensAreClearedInBothInitScenes()
@@ -35,7 +45,7 @@ public class IntroSkipTests
         foreach (string scene in new[] { "InitScene", "InitSceneLANMode" })
         {
             var game = new InitializeGame();
-            foreach (IntroStep step in IntroSkip.For(scene))
+            foreach (IntroStep step in IntroSkip.For(scene, IntroMode.Menu))
                 IntroSkip.Apply(game, step);
             Assert.False(game.runBootUpScreen);
             Assert.False(game.ColdOpen);
@@ -46,7 +56,7 @@ public class IntroSkipTests
     [Fact]
     public void TheLaunchOptionsSceneChoosesLanAfterSettingsLoad()
     {
-        IntroStep step = Assert.Single(IntroSkip.For("InitSceneLaunchOptions"));
+        IntroStep step = Assert.Single(IntroSkip.For("InitSceneLaunchOptions", IntroMode.Menu));
         var menu = new PreInitSceneScript();
         IntroSkip.Apply(menu, step);
         Assert.False(menu.Chose);
@@ -56,7 +66,7 @@ public class IntroSkipTests
     [Fact]
     public void OtherScenesAndAbsentTypesAreLeftAlone()
     {
-        Assert.Empty(IntroSkip.For("MainMenu"));
+        Assert.Empty(IntroSkip.For("MainMenu", IntroMode.Menu));
         Assert.Null(IntroSkip.Find("PreInitSceneScript"));
         Assert.Equal(typeof(IntroSkip), IntroSkip.Find("MortarBepInExBridge.IntroSkip"));
         var unrelated = new object();

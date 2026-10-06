@@ -40,10 +40,11 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         Application.quitting += this.Shutdown;
         if (MeasuredLaunch.Requested(Environment.GetEnvironmentVariable))
             PerfHost.Start(this.Logger);
-        if (IntroSkip.Requested(Environment.GetEnvironmentVariable))
+        IntroMode intro = IntroSkip.Requested(Environment.GetEnvironmentVariable, ReadIntroRequest());
+        if (intro != IntroMode.Play)
         {
-            this.Logger.LogInfo($"{IntroSkip.EnvVar} is set: this test launch skips the game's intro.");
-            IntroRunner.Start(this, this.Logger);
+            this.Logger.LogInfo($"Mortar asked this launch to skip the intro ({intro}).");
+            IntroRunner.Start(this, this.Logger, intro);
         }
 
         byte[] raw = new byte[32];
@@ -62,6 +63,19 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         this.StatePath = System.IO.Path.Combine(Paths.ConfigPath, StateFileName);
         Files.AtomicWrite(this.StatePath, $"{{\"port\":{this.Server.Port},\"token\":\"{token}\"}}");
         this.Logger.LogInfo($"Listening on 127.0.0.1:{this.Server.Port}.");
+    }
+
+    private static string? ReadIntroRequest()
+    {
+        string path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Paths.BepInExRootPath) ?? "", IntroSkip.RequestFile);
+        try
+        {
+            return System.IO.File.Exists(path) ? System.IO.File.ReadAllText(path) : null;
+        }
+        catch (System.IO.IOException)
+        {
+            return null;
+        }
     }
 
     private void Shutdown()
