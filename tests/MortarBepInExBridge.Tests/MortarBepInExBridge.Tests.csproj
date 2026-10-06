@@ -14,5 +14,6 @@
     <PackageReference Include="xunit" Version="2.*" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.*" />
     <ProjectReference Include="../../src/MortarBepInExBridge/MortarBepInExBridge.csproj" />
+    <ProjectReference Include="../../src/MortarBepInExBridge.Patcher/MortarBepInExBridge.Patcher.csproj" />
   </ItemGroup>
 </Project>

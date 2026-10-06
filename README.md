@@ -23,6 +23,7 @@ Prerequisites, packaging and install: [HUMANS.md](HUMANS.md).
 - Loopback TCP channel: one connection per command, authenticated with a per-run token
 - Writes `mortar-bepinex-bridge.json` (`port`, `token`) in BepInEx's `config` folder and deletes it on exit
 - Commands: `ping`, `status` (game version, scene, loaded plugins) and `plugins` (structured list)
+- Startup timing on a launch Mortar measures: a preloader patcher (`patchers/MortarBepInExBridge.Patcher.dll`) times each plugin's load (constructor and Awake) and the phases to the game's title scene, and writes `startup/<utc>.json` in the Mortar profile. Mortar asks for it by leaving `startup/.measure-launch` (holding the title scene's name) beside the profile's `BepInEx` folder; the launch consumes it, and a launch without it is not timed
 - Test launches only: with `MORTAR_SKIP_INTRO=1` in the game's environment, which only Mortar's sandbox and regress runs set, it takes Lethal Company straight to the main menu (LAN mode, no boot animation or cold open); without it the plugin changes nothing in the game
 
 ## Thunderstore page description

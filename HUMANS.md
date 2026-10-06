@@ -17,10 +17,10 @@ BepInEx comes from the `BepInEx.Core` package (nuget.bepinex.dev, listed in `nug
 
 ## Packaging and release
 
-`scripts/package.sh` builds Release and writes `dist/MortarBepInExBridge-<version>.zip` (plus `.sha256`) in Thunderstore's layout: `manifest.json`, `icon.png` (256x256) and `README.md` at the zip root, and `plugins/MortarBepInExBridge.dll`. `DIST=<dir>` writes elsewhere. `assets/icon.png` is a placeholder to replace before publishing.
+`scripts/package.sh` builds Release and writes `dist/MortarBepInExBridge-<version>.zip` (plus `.sha256`) in Thunderstore's layout: `manifest.json`, `icon.png` (256x256) and `README.md` at the zip root, `plugins/MortarBepInExBridge.dll`, and the startup-timing patcher `patchers/MortarBepInExBridge.Patcher.dll`. `DIST=<dir>` writes elsewhere. `assets/icon.png` is a placeholder to replace before publishing.
 
 `<Version>` in the csproj is the only place the version is written, and `Plugin.Version` must match it. It fills `manifest.template.json`. To release: bump both, commit, tag `v<version>`. The `v*` tag runs `.github/workflows/ci.yml`, whose release job checks the tag against the csproj version, runs `scripts/package.sh` and attaches the zip and its checksum to a GitHub release. Uploading that zip to Thunderstore is a manual step.
 
 ## Install by hand
 
-Copy `plugins/MortarBepInExBridge.dll` from the zip into `BepInEx/plugins/`.
+Copy `plugins/MortarBepInExBridge.dll` from the zip into `BepInEx/plugins/`, and `patchers/MortarBepInExBridge.Patcher.dll` into `BepInEx/patchers/` for startup timing.

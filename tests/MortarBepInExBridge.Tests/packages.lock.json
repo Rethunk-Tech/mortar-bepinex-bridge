@@ -89,6 +89,9 @@
       },
       "mortarbepinexbridge": {
         "type": "Project"
+      },
+      "mortarbepinexbridge.patcher": {
+        "type": "Project"
       }
     }
   }
