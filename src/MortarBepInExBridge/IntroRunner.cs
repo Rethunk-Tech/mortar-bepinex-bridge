@@ -14,12 +14,15 @@ namespace MortarBepInExBridge;
 internal sealed class IntroRunner : MonoBehaviour
 {
     private ManualLogSource? log;
+    private Plugin? plugin;
 
-    public static void Start(ManualLogSource log)
+    public static void Start(Plugin plugin, ManualLogSource log)
     {
         var host = new GameObject("MortarBridgeIntroSkip") { hideFlags = HideFlags.HideAndDontSave };
         DontDestroyOnLoad(host);
-        host.AddComponent<IntroRunner>().log = log;
+        var runner = host.AddComponent<IntroRunner>();
+        runner.plugin = plugin;
+        runner.log = log;
     }
 
     private void Awake() => SceneManager.sceneLoaded += this.OnSceneLoaded;
@@ -28,6 +31,9 @@ internal sealed class IntroRunner : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode _)
     {
+        // Unity's own null check: a destroyed plugin is not a null reference. The regress reads this line to learn
+        // whether the loader kept the plugin alive across scene loads.
+        this.log?.LogInfo($"Bridge plugin alive after scene {scene.name}: {this.plugin != null}");
         foreach (IntroStep step in IntroSkip.For(scene.name))
             this.StartCoroutine(this.RunStep(step));
     }

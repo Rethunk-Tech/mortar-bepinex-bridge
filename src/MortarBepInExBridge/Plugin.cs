@@ -36,7 +36,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         if (IntroSkip.Requested(Environment.GetEnvironmentVariable))
         {
             this.Logger.LogInfo($"{IntroSkip.EnvVar} is set: this test launch skips the game's intro.");
-            IntroRunner.Start(this.Logger);
+            IntroRunner.Start(this, this.Logger);
         }
 
         byte[] raw = new byte[32];
