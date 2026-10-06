@@ -22,6 +22,24 @@ public class GameVersionTests
         Assert.Equal("v81", GameVersion.Read(Lethal));
     }
 
+    private sealed class ModdedNetworkManager
+    {
+        public static ModdedNetworkManager? Instance { get; set; }
+
+        public int gameVersionNum = 1;
+    }
+
+    [Fact]
+    public void AVersionAModChangesAfterStartUpReadsAsTheGameSetIt()
+    {
+        GameVersion.Watch(typeof(ModdedNetworkManager), GameVersion.Sources[0]);
+        var made = new ModdedNetworkManager { gameVersionNum = 81 };
+        GameVersion.BeforeStartUp(made);
+        made.gameVersionNum += 9950;
+        ModdedNetworkManager.Instance = made;
+        Assert.Equal("v81", GameVersion.Read(name => name == "GameNetworkManager" ? typeof(ModdedNetworkManager) : null));
+    }
+
     [Fact]
     public void AGameWithoutASourceHasNoVersionOfItsOwn() =>
         Assert.Null(GameVersion.Read(_ => null));

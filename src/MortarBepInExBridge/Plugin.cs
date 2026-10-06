@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using BepInEx;
 using BepInEx.Bootstrap;
+using HarmonyLib;
 using MortarBepInExBridge.Perf;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -35,6 +36,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private void Awake()
     {
+        GameVersion.Hook(new Harmony(Guid + ".version"), IntroSkip.Find);
         this.ReadGameVersion();
         this.SceneValue = SceneManager.GetActiveScene().name;
         SceneManager.activeSceneChanged += (_, next) =>
