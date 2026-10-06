@@ -8,10 +8,13 @@ csproj="$root/src/MortarBepInExBridge/MortarBepInExBridge.csproj"
 version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$csproj")"
 [ -n "$version" ] || { echo "no <Version> in $csproj" >&2; exit 1; }
 
+# Every dotnet invocation leaves an empty dir in TMPDIR, so it gets one that the trap removes.
+scratch="$(mktemp -d)"
+trap 'rm -rf "$scratch"' EXIT
+export TMPDIR="$scratch"
 dotnet build "$csproj" -c Release
-stage="$(mktemp -d)"
-trap 'rm -rf "$stage"' EXIT
-mkdir "$stage/plugins"
+stage="$scratch/stage"
+mkdir -p "$stage/plugins"
 cp "$root/src/MortarBepInExBridge/bin/Release/netstandard2.1/MortarBepInExBridge.dll" "$stage/plugins/"
 cp "$root/assets/icon.png" "$root/README.md" "$stage/"
 sed "s/@VERSION@/$version/" "$root/manifest.template.json" >"$stage/manifest.json"
