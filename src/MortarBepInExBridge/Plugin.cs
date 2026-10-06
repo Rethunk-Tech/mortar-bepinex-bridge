@@ -32,9 +32,13 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private void Awake()
     {
-        this.GameVersionValue = Application.version;
+        this.GameVersionValue = GameVersion.Read(IntroSkip.Find, Application.version);
         this.SceneValue = SceneManager.GetActiveScene().name;
-        SceneManager.activeSceneChanged += (_, next) => this.SceneValue = next.name;
+        SceneManager.activeSceneChanged += (_, next) =>
+        {
+            this.SceneValue = next.name;
+            this.GameVersionValue = GameVersion.Read(IntroSkip.Find, Application.version);
+        };
         // Only a real quit stops the server: in Lethal Company, with BepInEx's default HideManagerGameObject=false, the
         // first scene load destroys the manager object and this component with it, while the game runs on.
         Application.quitting += this.Shutdown;
