@@ -55,7 +55,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
         // The config folder is the same for every way of launching the game, unlike the plugin's own folder, which a mod manager picks.
         this.StatePath = System.IO.Path.Combine(Paths.ConfigPath, StateFileName);
-        Files.AtomicWrite(this.StatePath, $"{{\"port\":{this.Server.Port},\"token\":\"{token}\",\"pid\":{System.Diagnostics.Process.GetCurrentProcess().Id}}}");
+        Files.AtomicWrite(this.StatePath, $"{{\"port\":{this.Server.Port},\"token\":\"{token}\"}}");
         this.Logger.LogInfo($"Listening on 127.0.0.1:{this.Server.Port}.");
     }
 

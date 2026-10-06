@@ -21,7 +21,7 @@ Prerequisites, packaging and install: [HUMANS.md](HUMANS.md).
 ## Highlights
 
 - Loopback TCP channel: one connection per command, authenticated with a per-run token
-- Writes `mortar-bepinex-bridge.json` (`port`, `token`, `pid`) in BepInEx's `config` folder and deletes it on exit
+- Writes `mortar-bepinex-bridge.json` (`port`, `token`) in BepInEx's `config` folder and deletes it on exit
 - Commands: `ping`, `status` (game version, scene, loaded plugins) and `plugins` (structured list)
 - Test launches only: with `MORTAR_SKIP_INTRO=1` in the game's environment, which only Mortar's sandbox and regress runs set, it takes Lethal Company straight to the main menu (LAN mode, no boot animation or cold open); without it the plugin changes nothing in the game
 
@@ -39,7 +39,7 @@ Prerequisites, packaging and install: [HUMANS.md](HUMANS.md).
 On launch the plugin listens on `127.0.0.1` (port chosen by the OS) and writes `mortar-bepinex-bridge.json` in `BepInEx/config`:
 
 ```json
-{"port":51234,"token":"<64 hex chars>","pid":4242}
+{"port":51234,"token":"<64 hex chars>"}
 ```
 
 The file is restricted to the current user (mode 0600 on Linux and macOS) and deleted on exit. Every request must carry the random 32-byte token, compared in constant time. The config folder is used rather than the plugin's own, because a mod manager chooses where plugins live but BepInEx always has one config folder.
