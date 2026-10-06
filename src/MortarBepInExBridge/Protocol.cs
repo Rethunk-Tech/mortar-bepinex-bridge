@@ -5,12 +5,22 @@ using System.Text;
 
 namespace MortarBepInExBridge;
 
-/// <summary>One loaded BepInEx plugin.</summary>
-internal sealed class PluginRow(string guid, string name, string version)
+/// <summary>One loaded BepInEx plugin. Location is its DLL's path below the plugins folder, with forward slashes, so a
+/// client can tell which of two copies of one GUID and version BepInEx kept; "" when it lies elsewhere.</summary>
+internal sealed class PluginRow(string guid, string name, string version, string location = "")
 {
     public string Guid { get; } = guid;
     public string Name { get; } = name;
     public string Version { get; } = version;
+    public string Location { get; } = location;
+
+    /// <summary>path below pluginsDir with forward slashes, or "" for a path outside it.</summary>
+    public static string Below(string pluginsDir, string path)
+    {
+        string root = pluginsDir.Replace('\\', '/').TrimEnd('/') + "/";
+        string file = path.Replace('\\', '/');
+        return file.StartsWith(root, StringComparison.OrdinalIgnoreCase) ? file[root.Length..] : "";
+    }
 }
 
 /// <summary>What the commands report. The plugin implements it over BepInEx and Unity so the protocol needs no game.</summary>
@@ -82,7 +92,10 @@ internal static class Protocol
             sb.Append("{\"guid\":").Append(Json.Quote(plugins[i].Guid));
             if (withName)
                 sb.Append(",\"name\":").Append(Json.Quote(plugins[i].Name));
-            sb.Append(",\"version\":").Append(Json.Quote(plugins[i].Version)).Append('}');
+            sb.Append(",\"version\":").Append(Json.Quote(plugins[i].Version));
+            if (plugins[i].Location != "")
+                sb.Append(",\"location\":").Append(Json.Quote(plugins[i].Location));
+            sb.Append('}');
         }
         return sb.Append(']').ToString();
     }

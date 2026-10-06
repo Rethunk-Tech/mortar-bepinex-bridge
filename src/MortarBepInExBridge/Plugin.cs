@@ -113,7 +113,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     {
         var rows = new List<PluginRow>();
         foreach (PluginInfo info in Chainloader.PluginInfos.Values)
-            rows.Add(new PluginRow(info.Metadata.GUID, info.Metadata.Name, info.Metadata.Version.ToString()));
+            rows.Add(new PluginRow(info.Metadata.GUID, info.Metadata.Name, info.Metadata.Version.ToString(), PluginRow.Below(Paths.PluginPath, info.Location ?? "")));
         return rows;
     }
 }

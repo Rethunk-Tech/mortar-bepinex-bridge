@@ -11,7 +11,7 @@ public class ProtocolTests
         public string GameVersion => "v62";
         public bool GameVersionIsGames => true;
         public string Scene => "SampleSceneRelay";
-        public IReadOnlyList<PluginRow> Plugins { get; } = [new("a.b", "A \"quoted\"", "1.2.3"), new("c.d", "C", "0.1.0")];
+        public IReadOnlyList<PluginRow> Plugins { get; } = [new("a.b", "A \"quoted\"", "1.2.3"), new("c.d", "C", "0.1.0", "Pack-C/c.dll")];
 
         public string Perf(bool start) => start ? "{\"started\":1}" : "{\"frames\":2}";
     }
@@ -19,12 +19,20 @@ public class ProtocolTests
     [Theory]
     [InlineData("ping", "ok")]
     [InlineData(" PING ", "ok")]
-    [InlineData("status", "ok {\"gameVersion\":\"v62\",\"gameVersionSource\":\"game\",\"scene\":\"SampleSceneRelay\",\"plugins\":[{\"guid\":\"a.b\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"version\":\"0.1.0\"}]}")]
-    [InlineData("plugins", "ok [{\"guid\":\"a.b\",\"name\":\"A \\\"quoted\\\"\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"name\":\"C\",\"version\":\"0.1.0\"}]")]
+    [InlineData("status", "ok {\"gameVersion\":\"v62\",\"gameVersionSource\":\"game\",\"scene\":\"SampleSceneRelay\",\"plugins\":[{\"guid\":\"a.b\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"version\":\"0.1.0\",\"location\":\"Pack-C/c.dll\"}]}")]
+    [InlineData("plugins", "ok [{\"guid\":\"a.b\",\"name\":\"A \\\"quoted\\\"\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"name\":\"C\",\"version\":\"0.1.0\",\"location\":\"Pack-C/c.dll\"}]")]
     [InlineData("perf", "ok {\"frames\":2}")]
     [InlineData("PERF START", "ok {\"started\":1}")]
     [InlineData("", "error: empty command")]
     public void Commands(string line, string reply) => Assert.Equal(reply, Protocol.Handle(line, new Game()));
+
+    [Theory]
+    [InlineData(@"Z:\p\BepInEx\plugins", @"Z:\p\BepInEx\plugins\Pack-A\Sub\a.dll", "Pack-A/Sub/a.dll")]
+    [InlineData("/p/BepInEx/plugins/", "/p/BepInEx/plugins/Pack-A/a.dll", "Pack-A/a.dll")]
+    [InlineData("/p/BepInEx/plugins", "/p/BepInEx/core/x.dll", "")]
+    [InlineData("/p/BepInEx/plugins", "", "")]
+    public void LocationIsBelowThePluginsFolder(string plugins, string path, string below) =>
+        Assert.Equal(below, PluginRow.Below(plugins, path));
 
     [Fact]
     public void UnknownCommandNamesTheOnesThatExist()
