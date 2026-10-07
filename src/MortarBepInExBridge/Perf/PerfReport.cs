@@ -44,6 +44,10 @@ internal static class PerfReport
             .Append("},\"monoUsedBytes\":").Append(memory.MonoUsed)
             .Append(",\"monoHeapBytes\":").Append(memory.MonoHeap)
             .Append(",\"gcCollections\":").Append(memory.Collections)
+            .Append(",\"baseline\":{\"frameMs\":").Append(Num(frames.AverageMs))
+            .Append(",\"modsMs\":").Append(Num(ModsTicks(costs, plugins.Count) * tickMs * perFrame))
+            .Append(",\"withoutModsMs\":").Append(Num(Math.Max(0, frames.AverageMs - ModsTicks(costs, plugins.Count) * tickMs * perFrame)))
+            .Append('}')
             .Append(",\"plugins\":[");
         for (int i = 0; i < plugins.Count; i++)
         {
@@ -51,7 +55,9 @@ internal static class PerfReport
                 sb.Append(',');
             sb.Append("{\"guid\":").Append(MortarBepInExBridge.Json.Quote(plugins[i]))
                 .Append(",\"msPerFrame\":").Append(Num(costs.Total(i) * tickMs * perFrame))
+                .Append(",\"p95Ms\":").Append(Num(costs.P95Ms(i, frames.Frames)))
                 .Append(",\"peakMs\":").Append(Num(costs.Peak(i) * tickMs))
+                .Append(",\"share\":").Append(Num(frames.AverageMs > 0 ? costs.Total(i) * tickMs * perFrame / frames.AverageMs : 0, 4))
                 .Append(",\"callsPerFrame\":").Append(Num(costs.Calls(i) * perFrame))
                 .Append(",\"patches\":").Append(Count(graph?.Patches, plugins[i]))
                 .Append(",\"transpilers\":").Append(Count(graph?.Transpilers, plugins[i])).Append('}');
@@ -69,8 +75,16 @@ internal static class PerfReport
         return sb.Append("}}").ToString();
     }
 
+    private static long ModsTicks(CostTracker costs, int plugins)
+    {
+        long ticks = 0;
+        for (int i = 0; i < plugins; i++)
+            ticks += costs.Total(i);
+        return ticks;
+    }
+
     private static int Count(Dictionary<string, int>? counts, string plugin) =>
         counts != null && counts.TryGetValue(plugin, out int n) ? n : 0;
 
-    private static string Num(double value) => Math.Round(value, 3).ToString("0.###", CultureInfo.InvariantCulture);
+    private static string Num(double value, int digits = 3) => Math.Round(value, digits).ToString("0.####", CultureInfo.InvariantCulture);
 }

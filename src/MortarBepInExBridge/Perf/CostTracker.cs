@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.Linq;
 
 namespace MortarBepInExBridge.Perf;
 
@@ -7,7 +9,7 @@ namespace MortarBepInExBridge.Perf;
 /// plugin patched), so a call's own time is its total less the time of the timed calls inside it; otherwise the outer
 /// plugin would be charged for the inner one. Times are Stopwatch ticks.
 /// </summary>
-internal sealed class CostTracker(int plugins)
+internal sealed class CostTracker(int plugins, double tickMs = 0)
 {
     private const int MaxDepth = 64;
     private readonly long[] child = new long[MaxDepth + 1];
@@ -16,6 +18,8 @@ internal sealed class CostTracker(int plugins)
     private readonly long[] total = new long[plugins];
     private readonly long[] peak = new long[plugins];
     private readonly long[] calls = new long[plugins];
+    private readonly Histogram[] perFrame = [.. Enumerable.Range(0, plugins).Select(_ => new Histogram())];
+    private readonly double msPerTick = tickMs > 0 ? tickMs : 1000.0 / Stopwatch.Frequency;
 
     /// <summary>A timed call starts; false when nesting is too deep to track, and the call is then not timed.</summary>
     public bool Enter()
@@ -47,6 +51,7 @@ internal sealed class CostTracker(int plugins)
         for (int i = 0; i < this.frame.Length; i++)
         {
             this.total[i] += this.frame[i];
+            this.perFrame[i].Add(this.frame[i] * this.msPerTick);
             this.peak[i] = Math.Max(this.peak[i], this.frame[i]);
             this.frame[i] = 0;
         }
@@ -58,6 +63,8 @@ internal sealed class CostTracker(int plugins)
         Array.Clear(this.total, 0, this.total.Length);
         Array.Clear(this.peak, 0, this.peak.Length);
         Array.Clear(this.calls, 0, this.calls.Length);
+        foreach (Histogram h in this.perFrame)
+            h.Reset();
     }
 
     public long Total(int plugin) => this.total[plugin];
@@ -65,4 +72,7 @@ internal sealed class CostTracker(int plugins)
     public long Peak(int plugin) => this.peak[plugin];
 
     public long Calls(int plugin) => this.calls[plugin];
+
+    /// <summary>The plugin's 95th-percentile cost in ms over <paramref name="frames"/> frames, frames it was not timed in counting as zero.</summary>
+    public double P95Ms(int plugin, long frames) => this.perFrame[plugin].Percentile(0.95, frames);
 }

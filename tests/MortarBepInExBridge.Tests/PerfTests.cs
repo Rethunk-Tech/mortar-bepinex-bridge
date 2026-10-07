@@ -95,7 +95,7 @@ public class PerfTests
         var frames = new FrameStats();
         frames.Add(20);
         frames.Add(20);
-        var costs = new CostTracker(1);
+        var costs = new CostTracker(1, 0.001);
         costs.Enter();
         costs.Exit(0, 3_000);
         costs.EndFrame();
@@ -113,8 +113,33 @@ public class PerfTests
         Assert.Equal(1.5, plugin.GetProperty("msPerFrame").GetDouble());
         Assert.Equal(3, plugin.GetProperty("peakMs").GetDouble());
         Assert.Equal(0.5, plugin.GetProperty("callsPerFrame").GetDouble());
+        Assert.Equal(3, plugin.GetProperty("p95Ms").GetDouble(), 1);
+        Assert.Equal(0.075, plugin.GetProperty("share").GetDouble(), 4);
+        JsonElement baseline = r.GetProperty("baseline");
+        Assert.Equal(20, baseline.GetProperty("frameMs").GetDouble());
+        Assert.Equal(1.5, baseline.GetProperty("modsMs").GetDouble());
+        Assert.Equal(18.5, baseline.GetProperty("withoutModsMs").GetDouble());
         Assert.Equal(1, plugin.GetProperty("patches").GetInt32());
         Assert.Equal(1, r.GetProperty("patchOwners").GetProperty("com.a").GetArrayLength());
+    }
+
+    [Fact]
+    public void PerPluginP95CountsEveryFrameAndZeroForARarePlugin()
+    {
+        var costs = new CostTracker(2, 0.001);
+        for (int i = 0; i < 100; i++)
+        {
+            if (costs.Enter())
+                costs.Exit(0, i < 10 ? 50_000 : 1_000);
+            if (i == 0 && costs.Enter())
+                costs.Exit(1, 30_000);
+            costs.EndFrame();
+        }
+
+        Assert.InRange(costs.P95Ms(0, 100), 45, 50);
+        Assert.Equal(0, costs.P95Ms(1, 100));
+        costs.Reset();
+        Assert.Equal(0, costs.P95Ms(0, 100));
     }
 
     [Fact]
