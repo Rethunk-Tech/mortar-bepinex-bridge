@@ -16,7 +16,7 @@ namespace MortarBepInExBridge;
 public sealed class Plugin : BaseUnityPlugin, IGameView
 {
     public const string Guid = "Rethunk.MortarBepInExBridge";
-    public const string Version = "0.2.0";
+    public const string Version = "0.2.1";
     private const string StateFileName = "mortar-bepinex-bridge.json";
 
     private BridgeServer? Server;
