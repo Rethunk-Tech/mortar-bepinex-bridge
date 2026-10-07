@@ -24,6 +24,7 @@ Prerequisites, packaging and install: [HUMANS.md](HUMANS.md).
 - Writes `mortar-bepinex-bridge.json` (`port`, `token`) in BepInEx's `config` folder and deletes it on exit
 - Commands: `ping`, `status` (game version, scene, loaded plugins) and `plugins` (structured list); on a measured launch `perf` and `perf start` (frame times, memory, and each plugin's main-thread time per frame, exclusive of nested timed calls)
 - Startup timing on a launch Mortar measures: a preloader patcher (`patchers/MortarBepInExBridge.Patcher.dll`) times each plugin's load (constructor and Awake) and the phases to the game's title scene, and writes `startup/<utc>.json` in the Mortar profile. Mortar asks for it by leaving `startup/.measure-launch` (holding the title scene's name) beside the profile's `BepInEx` folder; the launch consumes it, and a launch without it is not timed
+- Optional loopback stream overlay for Mortar's OBS page: `GET /state`, off unless Mortar's setting is on (below)
 - Skip the intro, only when Mortar asks: Mortar's "Skip the intro" setting writes `intro` to `startup/skip-intro` in the profile folder, and Lethal Company starts without its boot animation or cold open while the Online or LAN choice stays the player's. Mortar's crash check writes `menu`, and `MORTAR_SKIP_INTRO=1` in the game's environment (Mortar's sandbox and regress runs) means the same: the plugin also picks LAN, so the game reaches the main menu unattended. Without a request the plugin changes nothing in the game
 
 ## Thunderstore page description
@@ -60,6 +61,25 @@ The same framing as the SMAPI bridge: one connection per command. The client sen
 | wrong token | `error: unauthorized` |
 
 The game has no command console, so there is nothing to run: a command is a query, case-insensitive. Replies are one line, so a client that only checks for `ok` keeps working.
+
+## Stream overlay
+
+Off unless Mortar's Stream overlay setting is on. Mortar then writes `startup/overlay.json` in the profile folder that holds `BepInEx` (the same place as `startup/skip-intro`), with the keys the SMAPI bridge's `config.json` uses:
+
+```json
+{"OverlayEnabled":true,"OverlayPort":8123,"OverlayToken":"<64 hex chars>"}
+```
+
+The plugin reads it at start, listens on `127.0.0.1:<OverlayPort>` and serves `GET /state` with the token in `Authorization: Bearer <token>` or `?token=`; any other path, method or token gets an error status. The overlay token is separate from the command token and the server has no path to the command channel. Values are read on Unity's main thread twice a second and the listener serves the last snapshot. A game with no provider logs a warning and stays off.
+
+`/state` is `{"inGame":false}` outside a session, else `inGame`, `game` (Mortar's game id, which picks the page's layout), `playerName` and the game's own keys:
+
+| Game | Keys |
+| --- | --- |
+| `lethal-company` | `moon`, `crewAlive`, `crewTotal`, `day` (days spent), `quota`, `quotaProgress`, `daysLeft`, `credits` |
+| `valheim` | `biome`, `day`, `bossesDefeated` (names, in the order the bosses are met), `bossCount` |
+
+A key the game does not give (a renamed field after a game update) is left out, never zero. Providers name the game's types as strings and read them by reflection, so the plugin references no game assembly.
 
 ## Documentation
 
