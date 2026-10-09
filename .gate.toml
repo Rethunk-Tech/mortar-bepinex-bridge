@@ -1,0 +1,4 @@
+# CI restores with --locked-mode, so a drifted packages.lock.json fails there; the detected build restores unlocked
+# and would pass it.
+[gates.build]
+run = "dotnet restore --locked-mode && dotnet build MortarBepInExBridge.slnx -c Release --no-restore"

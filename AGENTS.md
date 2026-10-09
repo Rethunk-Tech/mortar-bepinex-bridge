@@ -12,3 +12,7 @@ C# BepInEx 5 plugin (netstandard2.1) that lets Mortar query a running game: the 
 ## Verify
 
 `gate` is the offline gate ([HUMANS.md](HUMANS.md)). Nothing is merged on a red gate.
+
+## Gate budget
+
+`.gate.toml` makes the build restore with `--locked-mode` as CI does, so a drifted `packages.lock.json` fails locally too; the detected build restored unlocked. Measured 2026-10-09 with `gate --profile` at load 2.6 to 3 (CPU is the evidence): warm 2.1 to 2.8 s wall and about 2 to 2.6 CPU-s; cold (a clone without `bin/`, `obj/` or `dist/`, throwaway `NUGET_PACKAGES`) 10.2 s wall and 7.8 CPU-s, 9.5 s of it restore (NuGet download) and build. Within the 10 s warm and 30 s cold budgets; build and test are chained because test runs `--no-build`, and nothing else repeats work.
