@@ -14,6 +14,7 @@ namespace MortarBepInExBridge.Overlay;
 internal sealed class OverlayServer(int port, string token) : IDisposable
 {
     private const int MaxLineBytes = 4096;
+    private const int MaxHeaderLines = 64;
     private const int ClientTimeoutMs = 5000;
     public const string NotInGame = "{\"inGame\":false}";
 
@@ -73,13 +74,16 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
         }
     }
 
-    private string Respond(Stream stream)
+    internal string Respond(Stream stream)
     {
         string? request = BridgeServer.ReadLine(stream, MaxLineBytes);
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         string? line;
+        int lines = 0;
         while (request != null && (line = BridgeServer.ReadLine(stream, MaxLineBytes)) is { Length: > 0 })
         {
+            if (++lines > MaxHeaderLines)
+                return Response(431, "{\"error\":\"too many headers\"}");
             int colon = line.IndexOf(':');
             if (colon > 0)
                 headers[line[..colon].Trim()] = line[(colon + 1)..].Trim();
@@ -118,7 +122,7 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
 
     private static string Response(int status, string body, string extraHeaders = "")
     {
-        string reason = status switch { 200 => "OK", 400 => "Bad Request", 401 => "Unauthorized", 404 => "Not Found", 405 => "Method Not Allowed", _ => "Error" };
+        string reason = status switch { 200 => "OK", 400 => "Bad Request", 401 => "Unauthorized", 404 => "Not Found", 405 => "Method Not Allowed", 431 => "Request Header Fields Too Large", _ => "Error" };
         // Allow-Origin: the page OBS opens is a file:// URL, which fetches this loopback address cross-origin.
         return $"HTTP/1.1 {status} {reason}\r\nContent-Type: application/json\r\nContent-Length: {Encoding.UTF8.GetByteCount(body)}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *\r\n{extraHeaders}Connection: close\r\n\r\n{body}";
     }

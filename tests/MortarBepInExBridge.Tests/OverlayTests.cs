@@ -150,4 +150,16 @@ public class OverlayTests
         if (status == 200)
             Assert.EndsWith("{\"inGame\":false}", reply);
     }
+
+    [Fact]
+    public void EndlessHeadersAreCutOff()
+    {
+        using var server = new OverlayServer(0, "t");
+        var sb = new System.Text.StringBuilder("GET /state HTTP/1.1\r\n");
+        for (int i = 0; i < 100000; i++)
+            sb.Append("X-").Append(i).Append(": v\r\n");
+        using var stream = new MemoryStream(System.Text.Encoding.ASCII.GetBytes(sb.ToString()));
+        Assert.StartsWith("HTTP/1.1 431 ", server.Respond(stream));
+        Assert.True(stream.Position < stream.Length / 10);
+    }
 }
