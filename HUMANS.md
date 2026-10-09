@@ -8,7 +8,7 @@ Requires the .NET SDK 10 or later (the plugin targets netstandard2.1, Unity's Mo
 
 ```sh
 dotnet build -c Release
-dotnet test -c Release
+dotnet test --solution MortarBepInExBridge.slnx -c Release
 ```
 
 BepInEx comes from the `BepInEx.Core` package (nuget.bepinex.dev, listed in `nuget.config`). UnityEngine comes from the `UnityEngine.Modules` package (2022.3.9, Lethal Company's Unity) on the same feed, so no game install is needed to build. Game assemblies are never committed.
