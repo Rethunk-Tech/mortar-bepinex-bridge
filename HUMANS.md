@@ -4,7 +4,7 @@ How to build, test and package the plugin. What it does: [README.md](README.md);
 
 ## Build and test
 
-Requires the .NET SDK 8 or later (the plugin targets netstandard2.1, Unity's Mono profile).
+Requires the .NET SDK 10 or later (the plugin targets netstandard2.1, Unity's Mono profile).
 
 ```sh
 dotnet build -c Release
