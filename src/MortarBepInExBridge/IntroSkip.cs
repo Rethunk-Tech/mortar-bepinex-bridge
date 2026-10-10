@@ -80,6 +80,18 @@ internal static class IntroSkip
     public static Type? Find(string name) =>
         AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
 
+    /// <summary>The engine's own call that ends its splash screen at once, or null in a Unity too old to have one.
+    /// It is found by name because the plugin is built against one Unity and runs in many.</summary>
+    public static Action? SplashStop(Func<string, Type?> find)
+    {
+        MethodInfo? stop = find("UnityEngine.Rendering.SplashScreen")?.GetMethods(BindingFlags.Static | BindingFlags.Public)
+            .FirstOrDefault(m => m.Name == "Stop" && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType.IsEnum);
+        if (stop == null)
+            return null;
+        object immediate = Enum.Parse(stop.GetParameters()[0].ParameterType, "StopImmediate");
+        return () => stop.Invoke(null, [immediate]);
+    }
+
     public static void Apply(object target, IntroStep step)
     {
         Type type = target.GetType();

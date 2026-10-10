@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Threading;
 using BepInEx.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -15,7 +16,13 @@ internal sealed class IntroRunner : MonoBehaviour
 {
     private ManualLogSource? log;
     private Plugin? plugin;
+    private static readonly TimeSpan SplashWait = TimeSpan.FromSeconds(30);
+
     private IntroMode mode;
+    private volatile bool sceneLoaded;
+    private volatile int splashAsks;
+    private volatile string? splashError;
+    private bool splashAsked;
 
     public static void Start(Plugin plugin, ManualLogSource log, IntroMode mode)
     {
@@ -25,6 +32,34 @@ internal sealed class IntroRunner : MonoBehaviour
         runner.plugin = plugin;
         runner.log = log;
         runner.mode = mode;
+        Action? stop = IntroSkip.SplashStop(IntroSkip.Find);
+        if (stop != null)
+        {
+            runner.splashAsked = true;
+            new Thread(() => runner.StopSplash(stop)) { IsBackground = true, Name = "MortarBridgeSplash" }.Start();
+        }
+    }
+
+    // The engine draws its splash screen while the first scene loads and runs no script frame until that scene is in,
+    // so nothing on the main thread can stop it. The engine's stop call is the one Unity call made off the main thread
+    // here: it is a static request the engine accepts from any thread, it does nothing until the splash is up, and so
+    // it is repeated until the first scene has loaded or SplashWait has passed.
+    private void StopSplash(Action stop)
+    {
+        try
+        {
+            var waited = System.Diagnostics.Stopwatch.StartNew();
+            while (!this.sceneLoaded && waited.Elapsed < SplashWait)
+            {
+                stop();
+                this.splashAsks++;
+                Thread.Sleep(10);
+            }
+        }
+        catch (Exception e)
+        {
+            this.splashError = (e.InnerException ?? e).GetType().Name;
+        }
     }
 
     private void Awake() => SceneManager.sceneLoaded += this.OnSceneLoaded;
@@ -36,6 +71,9 @@ internal sealed class IntroRunner : MonoBehaviour
         // Unity's own null check: a destroyed plugin is not a null reference. The regress reads this line to learn
         // whether the loader kept the plugin alive across scene loads.
         this.log?.LogInfo($"Bridge plugin alive after scene {scene.name}: {this.plugin != null}");
+        if (this.splashAsked && !this.sceneLoaded)
+            this.log?.LogInfo($"Intro skip: asked the engine to stop its splash screen {this.splashAsks} times before scene {scene.name} (error: {this.splashError ?? "none"}).");
+        this.sceneLoaded = true;
         foreach (IntroStep step in IntroSkip.For(scene.name, this.mode))
             this.StartCoroutine(this.RunStep(step));
     }
