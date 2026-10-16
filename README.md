@@ -32,7 +32,7 @@ Prerequisites, packaging and install: [HUMANS.md](HUMANS.md).
 **Mortar BepInEx Bridge** lets the Mortar mod manager see which BepInEx plugins a running game has loaded, so it can show their state without you reading `LogOutput.log`. It adds no gameplay and changes no game content.
 
 - **Install:** Mortar installs and updates it automatically. Install it by hand only if you want to query the game from your own tool.
-- **Requires:** BepInEx 5 (BepInExPack 5.4.2304 or later).
+- **Requires:** BepInEx 5, from your game's BepInExPack.
 - **Safety:** it listens on `127.0.0.1` only (never the network, never the internet) and every request needs a random token stored in a file only your user can read. It makes no outgoing connections. Under Proton the game is a Windows build, which has no file modes to restrict, so the token file is as private as the Steam library folder holding the prefix.
 - **Source and licence:** [github.com/Rethunk-Tech/mortar-bepinex-bridge](https://github.com/Rethunk-Tech/mortar-bepinex-bridge), AGPL-3.0. Built on BepInEx (LGPL-2.1), which is referenced, not redistributed.
 

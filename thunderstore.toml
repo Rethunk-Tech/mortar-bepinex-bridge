@@ -1,0 +1,20 @@
+# Read by tcli in CI's publish job. The version comes from manifest.json inside the zip scripts/package.sh builds.
+[config]
+schemaVersion = "0.0.1"
+
+[package]
+namespace = "Mortar"
+name = "MortarBepInExBridge"
+description = "Lets the Mortar mod manager query a running BepInEx game over a token-protected loopback socket. Installed by Mortar."
+websiteUrl = "https://github.com/Rethunk-Tech/mortar-bepinex-bridge"
+containsNsfwContent = false
+
+[package.dependencies]
+
+[publish]
+repository = "https://thunderstore.io"
+communities = ["lethal-company", "valheim"]
+
+[publish.categories]
+lethal-company = ["tools", "clientside"]
+valheim = ["tools", "client-side"]
