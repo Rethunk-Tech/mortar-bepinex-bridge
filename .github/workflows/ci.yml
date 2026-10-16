@@ -99,3 +99,43 @@ jobs:
         run: |
           dotnet tool install --global tcli --version 0.2.4
           tcli publish --config-path thunderstore.toml --file "dist/MortarBepInExBridge-${GITHUB_REF_NAME#v}.zip"
+
+  # Nexus Mods hosts one page per game; both get the release's BepInEx-tree zip.
+  nexus:
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch the Nexus zip
+        id: zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern "MortarBepInExBridge-$version-nexus.zip"
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+      - name: Upload to Nexus Mods (Lethal Company mod 315)
+        uses: Nexus-Mods/upload-action@98532f7670c27cbecc78fae03fa3e278147827e2  # v1.0.0-beta.11
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          mod_id: 315
+          file_id: 606
+          filename: MortarBepInExBridge-${{ steps.zip.outputs.version }}-nexus.zip
+          version: ${{ steps.zip.outputs.version }}
+          display_name: Mortar BepInEx Bridge
+          archive_existing_version: true
+          update_mod_version: true
+          changelog: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+      - name: Upload to Nexus Mods (Valheim mod 4444)
+        uses: Nexus-Mods/upload-action@98532f7670c27cbecc78fae03fa3e278147827e2  # v1.0.0-beta.11
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          mod_id: 4444
+          file_id: 25550
+          filename: MortarBepInExBridge-${{ steps.zip.outputs.version }}-nexus.zip
+          version: ${{ steps.zip.outputs.version }}
+          display_name: Mortar BepInEx Bridge
+          archive_existing_version: true
+          update_mod_version: true
+          changelog: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
