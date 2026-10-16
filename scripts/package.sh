@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Builds Release and writes dist/MortarBepInExBridge-<version>.zip in Thunderstore's layout:
 # manifest.json, icon.png (assets/icon.png, 256x256) and README.md at the zip root, the plugin dll under plugins/ and
-# the startup-timing patcher dll under patchers/.
+# the startup-timing patcher dll under patchers/. It also writes MortarBepInExBridge-<version>-nexus.zip, the same dlls
+# under BepInEx/plugins/ and BepInEx/patchers/, which unpacks into the game folder as Nexus Mods and Vortex expect.
 # DIST overrides the output folder (default dist/).
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -29,4 +30,14 @@ zip="$dist/MortarBepInExBridge-$version.zip"
 rm -f "$zip"
 (cd "$stage" && zip -q -X "$zip" manifest.json icon.png README.md plugins/MortarBepInExBridge.dll patchers/MortarBepInExBridge.Patcher.dll)
 (cd "$dist" && sha256sum "$(basename "$zip")" >"$(basename "$zip").sha256")
+
+nexus="$scratch/nexus"
+mkdir -p "$nexus/BepInEx/plugins/MortarBepInExBridge" "$nexus/BepInEx/patchers"
+cp "$stage/plugins/MortarBepInExBridge.dll" "$nexus/BepInEx/plugins/MortarBepInExBridge/"
+cp "$stage/patchers/MortarBepInExBridge.Patcher.dll" "$nexus/BepInEx/patchers/"
+nexus_zip="$dist/MortarBepInExBridge-$version-nexus.zip"
+rm -f "$nexus_zip"
+(cd "$nexus" && zip -q -X "$nexus_zip" BepInEx/plugins/MortarBepInExBridge/MortarBepInExBridge.dll BepInEx/patchers/MortarBepInExBridge.Patcher.dll)
+(cd "$dist" && sha256sum "$(basename "$nexus_zip")" >"$(basename "$nexus_zip").sha256")
 echo "$zip"
+echo "$nexus_zip"
