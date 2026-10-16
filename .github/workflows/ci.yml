@@ -139,3 +139,41 @@ jobs:
           archive_existing_version: true
           update_mod_version: true
           changelog: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+
+  # The plugin does not depend on the game version, so each file is tagged with every version CurseForge lists for its game.
+  curseforge:
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - game: Lethal Company
+            host: lethal-company.curseforge.com
+            project: 1747636
+          - game: Valheim
+            host: valheim.curseforge.com
+            project: 1747644
+    name: curseforge (${{ matrix.game }})
+    steps:
+      - name: Upload to CurseForge (project ${{ matrix.project }})
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          API: https://${{ matrix.host }}/api
+          PROJECT: ${{ matrix.project }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          zip="MortarBepInExBridge-$version-nexus.zip"
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern "$zip"
+          curl -fsS --config <(printf 'header = "X-Api-Token: %s"\n' "$CURSEFORGE_TOKEN") "$API/game/versions" >versions.json
+          metadata="$(python3 - "$version" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$GITHUB_REF_NAME" <<'PY'
+          import json, sys
+          ids = [v["id"] for v in json.load(open("versions.json"))]
+          print(json.dumps({"changelog": sys.argv[2], "changelogType": "text", "displayName": f"Mortar BepInEx Bridge {sys.argv[1]}", "gameVersions": ids, "releaseType": "release"}))
+          PY
+          )"
+          curl -fsS --config <(printf 'header = "X-Api-Token: %s"\n' "$CURSEFORGE_TOKEN") \
+            -F "metadata=$metadata" -F "file=@$zip" "$API/projects/$PROJECT/upload-file"
