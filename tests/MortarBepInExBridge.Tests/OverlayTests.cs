@@ -8,12 +8,14 @@ public class OverlayTests
     [Fact]
     public void ConfigNeedsEnabledPortAndToken()
     {
-        OverlayConfig? on = OverlayConfig.Parse("{\"OverlayEnabled\":true,\"OverlayPort\":8123,\"OverlayToken\":\"ab12\",\"StartupProfile\":false}");
+        const string token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        OverlayConfig? on = OverlayConfig.Parse($"{{\"OverlayEnabled\":true,\"OverlayPort\":8123,\"OverlayToken\":\"{token}\",\"StartupProfile\":false}}");
         Assert.Equal(8123, on?.Port);
-        Assert.Equal("ab12", on?.Token);
-        Assert.Null(OverlayConfig.Parse("{\"OverlayEnabled\":false,\"OverlayPort\":8123,\"OverlayToken\":\"ab12\"}"));
-        Assert.Null(OverlayConfig.Parse("{\"OverlayEnabled\":true,\"OverlayPort\":70000,\"OverlayToken\":\"ab12\"}"));
-        Assert.Null(OverlayConfig.Parse("{\"OverlayEnabled\":true,\"OverlayPort\":0,\"OverlayToken\":\"ab12\"}"));
+        Assert.Equal(token, on?.Token);
+        Assert.Null(OverlayConfig.Parse("{\"OverlayEnabled\":true,\"OverlayPort\":8123,\"OverlayToken\":\"ab12\"}"));
+        Assert.Null(OverlayConfig.Parse($"{{\"OverlayEnabled\":false,\"OverlayPort\":8123,\"OverlayToken\":\"{token}\"}}"));
+        Assert.Null(OverlayConfig.Parse($"{{\"OverlayEnabled\":true,\"OverlayPort\":70000,\"OverlayToken\":\"{token}\"}}"));
+        Assert.Null(OverlayConfig.Parse($"{{\"OverlayEnabled\":true,\"OverlayPort\":0,\"OverlayToken\":\"{token}\"}}"));
         Assert.Null(OverlayConfig.Parse("{\"OverlayEnabled\":true,\"OverlayPort\":8123,\"OverlayToken\":\"\"}"));
         Assert.Null(OverlayConfig.Parse(null));
     }
@@ -21,18 +23,22 @@ public class OverlayTests
     [Fact]
     public void EnabledOverlayWithABadPortOrMissingTokenNamesTheProblem()
     {
+        const string token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         Assert.Null(OverlayConfig.InvalidWhenEnabled(null));
-        Assert.Null(OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":false,\"OverlayPort\":8123,\"OverlayToken\":\"ab12\"}"));
-        Assert.Null(OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":8123,\"OverlayToken\":\"ab12\"}"));
+        Assert.Null(OverlayConfig.InvalidWhenEnabled($"{{\"OverlayEnabled\":false,\"OverlayPort\":8123,\"OverlayToken\":\"{token}\"}}"));
+        Assert.Null(OverlayConfig.InvalidWhenEnabled($"{{\"OverlayEnabled\":true,\"OverlayPort\":8123,\"OverlayToken\":\"{token}\"}}"));
+        Assert.Equal(
+            "overlay.json OverlayToken is too short",
+            OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":8123,\"OverlayToken\":\"ab12\"}"));
         Assert.Equal(
             "overlay.json is enabled but OverlayPort or OverlayToken is missing",
             OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":8123}"));
         Assert.Equal(
             "overlay.json OverlayPort is not a TCP port",
-            OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":70000,\"OverlayToken\":\"ab12\"}"));
+            OverlayConfig.InvalidWhenEnabled($"{{\"OverlayEnabled\":true,\"OverlayPort\":70000,\"OverlayToken\":\"{token}\"}}"));
         Assert.Equal(
             "overlay.json OverlayPort is not a TCP port",
-            OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":0,\"OverlayToken\":\"ab12\"}"));
+            OverlayConfig.InvalidWhenEnabled($"{{\"OverlayEnabled\":true,\"OverlayPort\":0,\"OverlayToken\":\"{token}\"}}"));
     }
 
     [Fact]

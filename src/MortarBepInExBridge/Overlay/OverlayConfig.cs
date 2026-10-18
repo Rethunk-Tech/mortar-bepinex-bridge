@@ -11,6 +11,7 @@ internal sealed class OverlayConfig(int port, string token)
     public string Token { get; } = token;
 
     public const string File = "startup/overlay.json";
+    internal const int MinTokenLength = 32;
 
     private static readonly Regex EnabledKey = new("\"OverlayEnabled\"\\s*:\\s*(true|false)", RegexOptions.Compiled);
     private static readonly Regex PortKey = new("\"OverlayPort\"\\s*:\\s*(\\d+)", RegexOptions.Compiled);
@@ -27,6 +28,8 @@ internal sealed class OverlayConfig(int port, string token)
         if (!enabled.Success || enabled.Groups[1].Value != "true" || !port.Success || !token.Success)
             return null;
         if (!int.TryParse(port.Groups[1].Value, out int number) || number is < 1 or > 65535)
+            return null;
+        if (token.Groups[1].Value.Length < MinTokenLength)
             return null;
         return new OverlayConfig(number, token.Groups[1].Value);
     }
@@ -46,6 +49,8 @@ internal sealed class OverlayConfig(int port, string token)
         Match token = TokenKey.Match(json);
         if (!port.Success || !token.Success)
             return "overlay.json is enabled but OverlayPort or OverlayToken is missing";
-        return "overlay.json OverlayPort is not a TCP port";
+        if (!int.TryParse(port.Groups[1].Value, out int number) || number is < 1 or > 65535)
+            return "overlay.json OverlayPort is not a TCP port";
+        return "overlay.json OverlayToken is too short";
     }
 }
