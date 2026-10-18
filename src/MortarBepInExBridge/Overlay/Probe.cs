@@ -29,7 +29,12 @@ internal static class Probe
     public static int? Int(object? value) => value switch
     {
         int i => i,
+        uint u => (int)u,
         long l => (int)l,
+        short s => s,
+        ushort us => us,
+        byte b => b,
+        sbyte sb => sb,
         float f => (int)f,
         double d => (int)d,
         _ => null,

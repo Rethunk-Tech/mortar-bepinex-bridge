@@ -18,6 +18,18 @@ public class OverlayTests
     }
 
     [Fact]
+    public void IntReadsTheIntegerWidthsAGameFieldUses()
+    {
+        Assert.Equal(3, Probe.Int(3));
+        Assert.Equal(4, Probe.Int(4u));
+        Assert.Equal(5, Probe.Int((short)5));
+        Assert.Equal(6, Probe.Int((ushort)6));
+        Assert.Equal(7, Probe.Int((byte)7));
+        Assert.Equal(-8, Probe.Int((sbyte)-8));
+        Assert.Null(Probe.Int("3"));
+    }
+
+    [Fact]
     public void JsonLeavesOutNullsAndEscapes()
     {
         var values = new Dictionary<string, object?> { ["a"] = "x\"y", ["b"] = null, ["c"] = 3, ["d"] = true, ["e"] = new[] { "p", "q" } };
