@@ -77,7 +77,7 @@ internal static class IntroSkip
     public static IEnumerable<IntroStep> For(string scene, IntroMode mode) =>
         Steps.Where(s => s.Scene == scene && mode != IntroMode.Play && (!s.Choice || mode == IntroMode.Menu));
 
-    private static readonly ConcurrentDictionary<string, Type> Types = new();
+    private static readonly ConcurrentDictionary<string, Type?> Types = new();
 
     /// <summary>The loaded type of that full name, or null in a game that has none.</summary>
     public static Type? Find(string name)
@@ -85,8 +85,7 @@ internal static class IntroSkip
         if (Types.TryGetValue(name, out Type? found))
             return found;
         found = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
-        if (found != null)
-            Types.TryAdd(name, found);
+        Types.TryAdd(name, found);
         return found;
     }
 

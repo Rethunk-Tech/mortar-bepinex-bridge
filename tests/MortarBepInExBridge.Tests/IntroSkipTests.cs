@@ -72,4 +72,12 @@ public class IntroSkipTests
         var unrelated = new object();
         IntroSkip.Apply(unrelated, IntroSkip.Steps[0]);
     }
+
+    [Fact]
+    public void FindCachesAMissSoLaterScenesDoNotWalkTheDomainAgain()
+    {
+        Assert.Null(IntroSkip.Find("MortarBepInExBridge.NoSuchTypeInThisProcess"));
+        object cache = typeof(IntroSkip).GetField("Types", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null)!;
+        Assert.True(((System.Collections.IDictionary)cache).Contains("MortarBepInExBridge.NoSuchTypeInThisProcess"));
+    }
 }
