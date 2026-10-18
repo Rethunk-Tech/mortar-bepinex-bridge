@@ -158,13 +158,8 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         this.Overlay = null;
         if (this.StatePath != null)
         {
-            try
-            {
-                System.IO.File.Delete(this.StatePath);
-            }
-            catch (System.IO.IOException)
-            {
-            }
+            if (Files.TryDelete(this.StatePath) is { } error)
+                this.Logger.LogWarning($"Could not remove {StateFileName}: {error}");
             this.StatePath = null;
         }
     }
