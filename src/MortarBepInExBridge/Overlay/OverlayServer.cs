@@ -21,6 +21,7 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
     private readonly TcpListener Listener = new(IPAddress.Loopback, port);
     private readonly string Token = token;
     private volatile string Snapshot = NotInGame;
+    private int Active;
     private volatile bool Stopped;
 
     public void Set(string json) => this.Snapshot = json;
@@ -50,7 +51,19 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
             {
                 return;
             }
-            ThreadPool.QueueUserWorkItem(_ => this.Serve(client));
+            if (!BridgeServer.TryAdmit(ref this.Active, client))
+                continue;
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    this.Serve(client);
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref this.Active);
+                }
+            });
         }
     }
 
@@ -60,7 +73,7 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
         {
             try
             {
-                client.ReceiveTimeout = ClientTimeoutMs;
+                client.ReceiveTimeout = BridgeServer.UnauthTimeoutMs;
                 client.SendTimeout = ClientTimeoutMs;
                 NetworkStream stream = client.GetStream();
                 byte[] reply = Encoding.UTF8.GetBytes(this.Respond(stream));

@@ -47,6 +47,31 @@ public class BridgeServerTests
     }
 
     [Fact]
+    public void ExtraClientsAreClosedWhenTheCapIsFull()
+    {
+        using var server = Started(_ => "ok");
+        var held = new List<TcpClient>();
+        try
+        {
+            for (int i = 0; i < BridgeServer.MaxClients; i++)
+            {
+                var idle = new TcpClient();
+                idle.Connect(IPAddress.Loopback, server.Port);
+                held.Add(idle);
+            }
+            using var extra = new TcpClient();
+            extra.Connect(IPAddress.Loopback, server.Port);
+            extra.ReceiveTimeout = 1000;
+            Assert.Equal(0, extra.GetStream().Read(new byte[1], 0, 1));
+        }
+        finally
+        {
+            foreach (TcpClient idle in held)
+                idle.Dispose();
+        }
+    }
+
+    [Fact]
     public void OversizedCommandIsRefused()
     {
         using var server = Started(_ => "ok");

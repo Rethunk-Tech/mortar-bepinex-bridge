@@ -12,10 +12,13 @@ namespace MortarBepInExBridge;
 internal sealed class BridgeServer(string token, Func<string, string> handle) : IDisposable
 {
     private const int ClientTimeoutMs = 5000;
+    internal const int MaxClients = 8;
+    internal const int UnauthTimeoutMs = 250;
 
     private readonly TcpListener Listener = new(IPAddress.Loopback, 0);
     private readonly string Token = token;
     private readonly Func<string, string> HandleLine = handle;
+    private int Active;
     private volatile bool Stopped;
 
     public int Port => ((IPEndPoint)this.Listener.LocalEndpoint).Port;
@@ -45,8 +48,29 @@ internal sealed class BridgeServer(string token, Func<string, string> handle) : 
             {
                 return;
             }
-            ThreadPool.QueueUserWorkItem(_ => this.Serve(client));
+            if (!TryAdmit(ref this.Active, client))
+                continue;
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    this.Serve(client);
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref this.Active);
+                }
+            });
         }
+    }
+
+    internal static bool TryAdmit(ref int active, TcpClient client)
+    {
+        if (Interlocked.Increment(ref active) <= MaxClients)
+            return true;
+        Interlocked.Decrement(ref active);
+        client.Close();
+        return false;
     }
 
     private void Serve(TcpClient client)
@@ -55,10 +79,10 @@ internal sealed class BridgeServer(string token, Func<string, string> handle) : 
         {
             try
             {
-                client.ReceiveTimeout = ClientTimeoutMs;
+                client.ReceiveTimeout = UnauthTimeoutMs;
                 client.SendTimeout = ClientTimeoutMs;
                 var stream = client.GetStream();
-                byte[] reply = Encoding.UTF8.GetBytes(this.Process(stream) + "\n");
+                byte[] reply = Encoding.UTF8.GetBytes(this.Process(client, stream) + "\n");
                 stream.Write(reply, 0, reply.Length);
             }
             catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException)
@@ -67,10 +91,11 @@ internal sealed class BridgeServer(string token, Func<string, string> handle) : 
         }
     }
 
-    private string Process(Stream stream)
+    private string Process(TcpClient client, Stream stream)
     {
         if (!Protocol.TokenMatches(this.Token, ReadLine(stream, Protocol.MaxTokenBytes)))
             return "error: unauthorized";
+        client.ReceiveTimeout = ClientTimeoutMs;
         string? line = ReadLine(stream, Protocol.MaxCommandBytes);
         return line == null ? "error: missing or oversized command" : this.HandleLine(line);
     }
