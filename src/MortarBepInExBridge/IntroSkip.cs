@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -76,9 +77,18 @@ internal static class IntroSkip
     public static IEnumerable<IntroStep> For(string scene, IntroMode mode) =>
         Steps.Where(s => s.Scene == scene && mode != IntroMode.Play && (!s.Choice || mode == IntroMode.Menu));
 
+    private static readonly ConcurrentDictionary<string, Type> Types = new();
+
     /// <summary>The loaded type of that full name, or null in a game that has none.</summary>
-    public static Type? Find(string name) =>
-        AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
+    public static Type? Find(string name)
+    {
+        if (Types.TryGetValue(name, out Type? found))
+            return found;
+        found = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
+        if (found != null)
+            Types.TryAdd(name, found);
+        return found;
+    }
 
     /// <summary>The engine's own call that ends its splash screen at once, or null in a Unity too old to have one.
     /// It is found by name because the plugin is built against one Unity and runs in many.</summary>
