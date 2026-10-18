@@ -19,7 +19,23 @@ internal sealed class PluginRow(string guid, string name, string version, string
     {
         string root = pluginsDir.Replace('\\', '/').TrimEnd('/') + "/";
         string file = path.Replace('\\', '/');
-        return file.StartsWith(root, StringComparison.OrdinalIgnoreCase) ? file[root.Length..] : "";
+        if (!file.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            return "";
+        string relative = file[root.Length..];
+        int depth = 0;
+        foreach (string part in relative.Split('/'))
+        {
+            if (part.Length == 0 || part == ".")
+                continue;
+            if (part == "..")
+            {
+                if (--depth < 0)
+                    return "";
+                continue;
+            }
+            depth++;
+        }
+        return relative;
     }
 }
 
@@ -46,8 +62,12 @@ internal static class Protocol
 
     public static bool TokenMatches(string expected, string? provided)
     {
-        return provided != null
-            && CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(provided));
+        if (provided == null)
+            return false;
+        byte[] left = Encoding.UTF8.GetBytes(expected);
+        byte[] right = Encoding.UTF8.GetBytes(provided);
+        // Unity's Mono throws when the spans differ in length; net10 returns false.
+        return left.Length == right.Length && CryptographicOperations.FixedTimeEquals(left, right);
     }
 
     /// <summary>

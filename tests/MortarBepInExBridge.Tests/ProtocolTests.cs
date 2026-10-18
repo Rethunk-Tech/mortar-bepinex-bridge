@@ -31,6 +31,8 @@ public class ProtocolTests
     [InlineData("/p/BepInEx/plugins/", "/p/BepInEx/plugins/Pack-A/a.dll", "Pack-A/a.dll")]
     [InlineData("/p/BepInEx/plugins", "/p/BepInEx/core/x.dll", "")]
     [InlineData("/p/BepInEx/plugins", "", "")]
+    [InlineData("/p/BepInEx/plugins", "/p/BepInEx/plugins/foo/../../secret.dll", "")]
+    [InlineData("/p/BepInEx/plugins", "/p/BepInEx/plugins/Pack/../Pack/a.dll", "Pack/../Pack/a.dll")]
     public void LocationIsBelowThePluginsFolder(string plugins, string path, string below) =>
         Assert.Equal(below, PluginRow.Below(plugins, path));
 
@@ -48,6 +50,9 @@ public class ProtocolTests
         Assert.True(Protocol.TokenMatches("abc", "abc"));
         Assert.False(Protocol.TokenMatches("abc", "abd"));
         Assert.False(Protocol.TokenMatches("abc", null));
+        Assert.False(Protocol.TokenMatches("abc", "ab"));
+        Assert.False(Protocol.TokenMatches("abc", "abcd"));
+        Assert.False(Protocol.TokenMatches("abc", ""));
         Assert.Equal("ping", BridgeServer.ReadLine(new MemoryStream(Encoding.UTF8.GetBytes("ping\r\n")), 16));
         Assert.Null(BridgeServer.ReadLine(new MemoryStream(Encoding.UTF8.GetBytes("pingping\n")), 4));
         Assert.Null(BridgeServer.ReadLine(new MemoryStream(Encoding.UTF8.GetBytes("no newline")), 64));
