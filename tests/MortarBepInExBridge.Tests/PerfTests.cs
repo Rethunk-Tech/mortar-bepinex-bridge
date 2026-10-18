@@ -76,6 +76,32 @@ public class PerfTests
     }
 
     [Fact]
+    public void EnterStopsTimingPastTheNestingCap()
+    {
+        var costs = new CostTracker(1);
+        for (int i = 0; i < 64; i++)
+            Assert.True(costs.Enter());
+        Assert.False(costs.Enter());
+        costs.Exit(0, 10);
+        costs.EndFrame();
+        Assert.Equal(10, costs.Total(0));
+        Assert.Equal(1, costs.Calls(0));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(double.NaN)]
+    public void HistogramIgnoresNonPositiveSamples(double ms)
+    {
+        var h = new Histogram();
+        h.Add(ms);
+        h.Add(5);
+        Assert.Equal(0, h.Percentile(0.5, 2));
+        Assert.Equal(5, h.Max);
+    }
+
+    [Fact]
     public void FramePercentilesComeFromTheHistogram()
     {
         var frames = new FrameStats();

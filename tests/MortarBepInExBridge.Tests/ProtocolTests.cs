@@ -37,6 +37,25 @@ public class ProtocolTests
         Assert.Equal(below, PluginRow.Below(plugins, path));
 
     [Fact]
+    public void StatusNamesUnityWhenTheGameHasNoVersionOfItsOwn()
+    {
+        var game = new UnityGame();
+        Assert.Equal(
+            "ok {\"gameVersion\":\"2022.3.9\",\"gameVersionSource\":\"unity\",\"scene\":\"MainMenu\",\"plugins\":[]}",
+            Protocol.Handle("status", game));
+    }
+
+    private sealed class UnityGame : IGameView
+    {
+        public string GameVersion => "2022.3.9";
+        public bool GameVersionIsGames => false;
+        public string Scene => "MainMenu";
+        public IReadOnlyList<PluginRow> Plugins { get; } = [];
+
+        public string Perf(bool start) => "{}";
+    }
+
+    [Fact]
     public void UnknownCommandNamesTheOnesThatExist()
     {
         string reply = Protocol.Handle("give money", new Game());

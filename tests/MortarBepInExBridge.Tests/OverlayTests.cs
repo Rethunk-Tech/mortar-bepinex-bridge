@@ -13,6 +13,7 @@ public class OverlayTests
         Assert.Equal("ab12", on?.Token);
         Assert.Null(OverlayConfig.Parse("{\"OverlayEnabled\":false,\"OverlayPort\":8123,\"OverlayToken\":\"ab12\"}"));
         Assert.Null(OverlayConfig.Parse("{\"OverlayEnabled\":true,\"OverlayPort\":70000,\"OverlayToken\":\"ab12\"}"));
+        Assert.Null(OverlayConfig.Parse("{\"OverlayEnabled\":true,\"OverlayPort\":0,\"OverlayToken\":\"ab12\"}"));
         Assert.Null(OverlayConfig.Parse("{\"OverlayEnabled\":true,\"OverlayPort\":8123,\"OverlayToken\":\"\"}"));
         Assert.Null(OverlayConfig.Parse(null));
     }
@@ -29,6 +30,9 @@ public class OverlayTests
         Assert.Equal(
             "overlay.json OverlayPort is not a TCP port",
             OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":70000,\"OverlayToken\":\"ab12\"}"));
+        Assert.Equal(
+            "overlay.json OverlayPort is not a TCP port",
+            OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":0,\"OverlayToken\":\"ab12\"}"));
     }
 
     [Fact]
@@ -40,6 +44,9 @@ public class OverlayTests
         Assert.Equal(6, Probe.Int((ushort)6));
         Assert.Equal(7, Probe.Int((byte)7));
         Assert.Equal(-8, Probe.Int((sbyte)-8));
+        Assert.Equal(9, Probe.Int(9L));
+        Assert.Equal(10, Probe.Int(10f));
+        Assert.Equal(11, Probe.Int(11.9));
         Assert.Null(Probe.Int("3"));
     }
 
@@ -48,6 +55,20 @@ public class OverlayTests
     {
         var values = new Dictionary<string, object?> { ["a"] = "x\"y", ["b"] = null, ["c"] = 3, ["d"] = true, ["e"] = new[] { "p", "q" } };
         Assert.Equal("{\"a\":\"x\\\"y\",\"c\":3,\"d\":true,\"e\":[\"p\",\"q\"]}", OverlayJson.Write(values));
+    }
+
+    [Fact]
+    public void JsonWritesFalseDoublesLongsAndSkipsNullListItems()
+    {
+        var values = new Dictionary<string, object?>
+        {
+            ["a"] = false,
+            ["b"] = 1.5,
+            ["c"] = 4L,
+            ["d"] = new object?[] { null, "x" },
+            ["e"] = DayOfWeek.Sunday,
+        };
+        Assert.Equal("{\"a\":false,\"b\":1.5,\"c\":4,\"d\":[\"x\"],\"e\":\"Sunday\"}", OverlayJson.Write(values));
     }
 
     private sealed class Level { public string PlanetName = "41 Experimentation"; }
@@ -158,13 +179,17 @@ public class OverlayTests
 
     [Theory]
     [InlineData("GET /state?token=t HTTP/1.1", null, 200)]
+    [InlineData("GET /state?token=%74 HTTP/1.1", null, 200)]
+    [InlineData("GET /state?foo=1&token=t HTTP/1.1", null, 200)]
     [InlineData("GET /state HTTP/1.1", "Bearer t", 200)]
+    [InlineData("GET /state HTTP/1.1", "bearer t", 200)]
     [InlineData("GET /state?token=nope HTTP/1.1", null, 401)]
     [InlineData("GET /state HTTP/1.1", null, 401)]
     [InlineData("GET /other?token=t HTTP/1.1", null, 404)]
     [InlineData("POST /state?token=t HTTP/1.1", null, 405)]
     [InlineData("garbage", null, 400)]
     [InlineData("GET /state?token=% HTTP/1.1", null, 400)]
+    [InlineData("GET /state?token=%2 HTTP/1.1", null, 400)]
     public void ServerChecksMethodPathAndToken(string request, string? auth, int status)
     {
         using var server = new OverlayServer(0, "t");
@@ -176,6 +201,15 @@ public class OverlayTests
         Assert.StartsWith($"HTTP/1.1 {status} ", reply);
         if (status == 200)
             Assert.EndsWith("{\"inGame\":false}", reply);
+    }
+
+    [Fact]
+    public void QueryTokenTurnsPlusIntoASpace()
+    {
+        using var server = new OverlayServer(0, "a b");
+        server.Set("{\"inGame\":false}");
+        string reply = server.Answer("GET /state?token=a+b HTTP/1.1", new Dictionary<string, string>());
+        Assert.StartsWith("HTTP/1.1 200 ", reply);
     }
 
     [Fact]
