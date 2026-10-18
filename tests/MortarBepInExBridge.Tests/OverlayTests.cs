@@ -138,6 +138,7 @@ public class OverlayTests
     [InlineData("GET /other?token=t HTTP/1.1", null, 404)]
     [InlineData("POST /state?token=t HTTP/1.1", null, 405)]
     [InlineData("garbage", null, 400)]
+    [InlineData("GET /state?token=% HTTP/1.1", null, 400)]
     public void ServerChecksMethodPathAndToken(string request, string? auth, int status)
     {
         using var server = new OverlayServer(0, "t");

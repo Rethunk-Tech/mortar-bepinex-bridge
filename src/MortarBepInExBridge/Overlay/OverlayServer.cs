@@ -102,7 +102,16 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
         int query = target.IndexOf('?');
         if ((query < 0 ? target : target[..query]) != "/state")
             return Response(404, "{\"error\":\"not found\"}");
-        if (!Protocol.TokenMatches(this.Token, TokenOf(query < 0 ? "" : target[(query + 1)..], headers)))
+        string? given;
+        try
+        {
+            given = TokenOf(query < 0 ? "" : target[(query + 1)..], headers);
+        }
+        catch (UriFormatException)
+        {
+            return Response(400, "{\"error\":\"bad request\"}");
+        }
+        if (!Protocol.TokenMatches(this.Token, given))
             return Response(401, "{\"error\":\"unauthorized\"}", "WWW-Authenticate: Bearer\r\n");
         return Response(200, this.Snapshot);
     }
@@ -114,10 +123,24 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
         foreach (string pair in query.Split(['&'], StringSplitOptions.RemoveEmptyEntries))
         {
             int eq = pair.IndexOf('=');
-            if (eq > 0 && Uri.UnescapeDataString(pair[..eq]) == "token")
-                return Uri.UnescapeDataString(pair[(eq + 1)..].Replace('+', ' '));
+            if (eq > 0 && UnescapeQuery(pair[..eq]) == "token")
+                return UnescapeQuery(pair[(eq + 1)..].Replace('+', ' '));
         }
         return null;
+    }
+
+    // Unity's Mono throws UriFormatException on a lone '%'; net10 UnescapeDataString does not.
+    private static string UnescapeQuery(string s)
+    {
+        for (int i = 0; i < s.Length; i++)
+        {
+            if (s[i] != '%')
+                continue;
+            if (i + 2 >= s.Length || !Uri.IsHexDigit(s[i + 1]) || !Uri.IsHexDigit(s[i + 2]))
+                throw new UriFormatException();
+            i += 2;
+        }
+        return Uri.UnescapeDataString(s);
     }
 
     private static string Response(int status, string body, string extraHeaders = "")
