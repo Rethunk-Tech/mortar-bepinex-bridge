@@ -20,4 +20,12 @@ public class StartupPatcherTests
             .Order(StringComparer.Ordinal)];
         Assert.Equal(["Initialize", "Patch", "get_TargetDLLs"], bound);
     }
+
+    [Fact]
+    public void TitleFromRequestKeepsTheFirstLineAndCapsIt()
+    {
+        Assert.Equal("MainMenu", StartupPatcher.TitleFromRequest("  MainMenu\nTiming is off\n"));
+        Assert.Equal(new string('a', StartupPatcher.MaxTitleChars), StartupPatcher.TitleFromRequest(new string('a', StartupPatcher.MaxTitleChars + 8)));
+        Assert.Equal("", StartupPatcher.TitleFromRequest("   "));
+    }
 }

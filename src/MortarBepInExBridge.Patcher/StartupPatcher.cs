@@ -46,10 +46,16 @@ public static class StartupPatcher
             // BepInEx's root is the profile's BepInEx folder; the profile folder above it holds Mortar's startup folder.
             startupDir = Path.Combine(Path.GetDirectoryName(Paths.BepInExRootPath) ?? "", "startup");
             string request = Path.Combine(startupDir, MeasureFile);
-            if (!File.Exists(request))
+            string? text = Files.ReadText(request, out string? error);
+            if (text == null && error == null)
                 return;
-            string title = File.ReadAllText(request).Trim();
             File.Delete(request);
+            if (error != null)
+            {
+                Log.LogWarning($"Could not read {MeasureFile}: {error}");
+                return;
+            }
+            string title = TitleFromRequest(text!);
             Environment.SetEnvironmentVariable(MeasuredEnvVar, "1");
             processStart = ProcessStart();
             timer = new StartupTimer(Now(), title);
@@ -61,6 +67,19 @@ public static class StartupPatcher
         {
             Abandon(ex);
         }
+    }
+
+    internal const int MaxTitleChars = 256;
+
+    /// <summary>The title scene Mortar asked for: the first line, trimmed, capped so a request file cannot fill logs
+    /// or wait on an unbounded name.</summary>
+    internal static string TitleFromRequest(string text)
+    {
+        string title = text.Trim();
+        int nl = title.IndexOfAny(['\r', '\n']);
+        if (nl >= 0)
+            title = title[..nl].Trim();
+        return title.Length > MaxTitleChars ? title[..MaxTitleChars] : title;
     }
 
     private static DateTime ProcessStart()
