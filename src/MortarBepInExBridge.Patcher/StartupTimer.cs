@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MortarBepInExBridge;
 
@@ -30,6 +31,7 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
     private const string ErrorLoading = "Error loading [";
 
     private const int Kept = 10;
+    private static readonly Regex ReportFile = new(@"^\d{8}T\d{6}Z\.json$", RegexOptions.Compiled);
 
     private readonly List<(string Plugin, long Start, long End)> loads = [];
     private long chainloaderStart;
@@ -116,7 +118,7 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
         Directory.CreateDirectory(dir);
         string path = Path.Combine(dir, processStart.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture) + ".json");
         Files.AtomicWrite(path, report);
-        foreach (string old in Directory.GetFiles(dir, "*.json").Where(f => !f.EndsWith(".samples.json", StringComparison.Ordinal)).OrderByDescending(f => f, StringComparer.Ordinal).Skip(Kept))
+        foreach (string old in Directory.GetFiles(dir, "*.json").Where(f => ReportFile.IsMatch(Path.GetFileName(f))).OrderByDescending(f => f, StringComparer.Ordinal).Skip(Kept))
             File.Delete(old);
         return path;
     }

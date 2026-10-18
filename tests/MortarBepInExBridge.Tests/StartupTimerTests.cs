@@ -79,12 +79,16 @@ public class StartupTimerTests
             for (int i = 0; i < 12; i++)
                 File.WriteAllText(Path.Combine(dir, $"20260101T0000{i:00}Z.json"), "{}");
             File.WriteAllText(Path.Combine(dir, "20260101T000000Z.samples.json"), "{}");
+            File.WriteAllText(Path.Combine(dir, "overlay.json"), "{}");
+            File.WriteAllText(Path.Combine(dir, "zzzz.json"), "{}");
             string path = StartupTimer.Write(dir, new DateTime(2026, 10, 6, 18, 0, 0, DateTimeKind.Utc), "{\"schema\":1}");
 
             Assert.Equal("20261006T180000Z.json", Path.GetFileName(path));
             Assert.Equal("{\"schema\":1}", File.ReadAllText(path));
             Assert.Equal(10, Directory.GetFiles(dir, "*Z.json").Length);
             Assert.True(File.Exists(Path.Combine(dir, "20260101T000000Z.samples.json")));
+            Assert.True(File.Exists(Path.Combine(dir, "overlay.json")));
+            Assert.True(File.Exists(Path.Combine(dir, "zzzz.json")));
         }
         finally
         {
