@@ -112,9 +112,14 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     // Only when Mortar's stream overlay setting is on, and only for a game that has a provider.
     private void StartOverlay()
     {
-        OverlayConfig? config = OverlayConfig.Parse(ReadProfileFile(OverlayConfig.File));
+        string? overlayJson = ReadProfileFile(OverlayConfig.File);
+        OverlayConfig? config = OverlayConfig.Parse(overlayJson);
         if (config == null)
+        {
+            if (OverlayConfig.InvalidWhenEnabled(overlayJson) is { } why)
+                this.Logger.LogWarning($"Stream overlay is off: {why}.");
             return;
+        }
         IOverlayProvider? provider = OverlayProviders.For(Application.productName, IntroSkip.Find, this.FindObject);
         if (provider == null)
         {
@@ -136,17 +141,13 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     }
 
     // A request Mortar leaves in the profile folder that holds BepInEx's, which a Steam launch reaches where the environment does not.
-    private static string? ReadProfileFile(string relative)
+    private string? ReadProfileFile(string relative)
     {
         string path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Paths.BepInExRootPath) ?? "", relative);
-        try
-        {
-            return System.IO.File.Exists(path) ? System.IO.File.ReadAllText(path) : null;
-        }
-        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        string? text = Files.ReadText(path, out string? error);
+        if (error != null)
+            this.Logger.LogWarning($"Could not read {relative}: {error}");
+        return text;
     }
 
     private void Shutdown()

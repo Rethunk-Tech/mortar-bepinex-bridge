@@ -30,4 +30,22 @@ internal sealed class OverlayConfig(int port, string token)
             return null;
         return new OverlayConfig(number, token.Groups[1].Value);
     }
+
+    /// <summary>Why a file that asks for overlay cannot start it. Null when overlay should stay off without a
+    /// warning: no file, OverlayEnabled not true, or the file is valid.</summary>
+    public static string? InvalidWhenEnabled(string? json)
+    {
+        if (json == null)
+            return null;
+        Match enabled = EnabledKey.Match(json);
+        if (!enabled.Success || enabled.Groups[1].Value != "true")
+            return null;
+        if (Parse(json) != null)
+            return null;
+        Match port = PortKey.Match(json);
+        Match token = TokenKey.Match(json);
+        if (!port.Success || !token.Success)
+            return "overlay.json is enabled but OverlayPort or OverlayToken is missing";
+        return "overlay.json OverlayPort is not a TCP port";
+    }
 }

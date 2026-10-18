@@ -18,6 +18,20 @@ public class OverlayTests
     }
 
     [Fact]
+    public void EnabledOverlayWithABadPortOrMissingTokenNamesTheProblem()
+    {
+        Assert.Null(OverlayConfig.InvalidWhenEnabled(null));
+        Assert.Null(OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":false,\"OverlayPort\":8123,\"OverlayToken\":\"ab12\"}"));
+        Assert.Null(OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":8123,\"OverlayToken\":\"ab12\"}"));
+        Assert.Equal(
+            "overlay.json is enabled but OverlayPort or OverlayToken is missing",
+            OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":8123}"));
+        Assert.Equal(
+            "overlay.json OverlayPort is not a TCP port",
+            OverlayConfig.InvalidWhenEnabled("{\"OverlayEnabled\":true,\"OverlayPort\":70000,\"OverlayToken\":\"ab12\"}"));
+    }
+
+    [Fact]
     public void IntReadsTheIntegerWidthsAGameFieldUses()
     {
         Assert.Equal(3, Probe.Int(3));
