@@ -4,7 +4,7 @@
     "net10.0": {
       "xunit.v3": {
         "type": "Direct",
-        "requested": "[*, )",
+        "requested": "[4.0.1]",
         "resolved": "4.0.1",
         "contentHash": "KpDYf6jFjYfOchuRJOAXPOpwN03hLE1AF4kWzCUSnhr8JZMiGH4BT1YidCcm6BE1H4E90GyJzuKoCwXbg9PXmA==",
         "dependencies": {

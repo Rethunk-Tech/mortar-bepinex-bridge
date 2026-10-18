@@ -11,7 +11,7 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.v3" Version="*" />
+    <PackageReference Include="xunit.v3" Version="[4.0.1]" />
     <ProjectReference Include="../../src/MortarBepInExBridge/MortarBepInExBridge.csproj" />
     <ProjectReference Include="../../src/MortarBepInExBridge.Patcher/MortarBepInExBridge.Patcher.csproj" />
   </ItemGroup>
