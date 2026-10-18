@@ -115,11 +115,7 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
     {
         Directory.CreateDirectory(dir);
         string path = Path.Combine(dir, processStart.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture) + ".json");
-        string temp = path + ".tmp";
-        File.WriteAllText(temp, report);
-        if (File.Exists(path))
-            File.Delete(path);
-        File.Move(temp, path);
+        Files.AtomicWrite(path, report);
         foreach (string old in Directory.GetFiles(dir, "*.json").Where(f => !f.EndsWith(".samples.json", StringComparison.Ordinal)).OrderByDescending(f => f, StringComparer.Ordinal).Skip(Kept))
             File.Delete(old);
         return path;

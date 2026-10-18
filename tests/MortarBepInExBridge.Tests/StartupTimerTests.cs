@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Xunit;
 
@@ -85,6 +86,26 @@ public class StartupTimerTests
         finally
         {
             Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void WriteReplacesAnExistingReportAndRestrictsIt()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "mortar-startup-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            DateTime start = new(2026, 10, 6, 18, 0, 0, DateTimeKind.Utc);
+            string path = StartupTimer.Write(dir, start, "old");
+            Assert.Equal(path, StartupTimer.Write(dir, start, "new"));
+            Assert.Equal("new", File.ReadAllText(path));
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path));
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, true);
         }
     }
 }

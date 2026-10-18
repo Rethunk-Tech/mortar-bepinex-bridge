@@ -13,8 +13,9 @@ internal static class Files
         Restrict(temp);
         File.WriteAllText(temp, contents);
         if (File.Exists(path))
-            File.Delete(path);
-        File.Move(temp, path);
+            File.Replace(temp, path, null);
+        else
+            File.Move(temp, path);
     }
 
     // A Windows build has no mode bits to set, which includes the same build running under Proton.
