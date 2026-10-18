@@ -69,11 +69,19 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
             this.Logger.LogDebug($"Command received: {line}");
             return Protocol.Handle(line, this);
         });
-        this.Server.Start();
-
         // The config folder is the same for every way of launching the game, unlike the plugin's own folder, which a mod manager picks.
         this.StatePath = System.IO.Path.Combine(Paths.ConfigPath, StateFileName);
-        Files.AtomicWrite(this.StatePath, $"{{\"port\":{this.Server.Port},\"token\":\"{token}\"}}");
+        this.Server.Start();
+        try
+        {
+            Files.AtomicWrite(this.StatePath, $"{{\"port\":{this.Server.Port},\"token\":\"{token}\"}}");
+        }
+        catch
+        {
+            this.Server.Dispose();
+            this.Server = null;
+            throw;
+        }
         this.Logger.LogInfo($"Listening on 127.0.0.1:{this.Server.Port}.");
         this.StartOverlay();
     }
@@ -135,7 +143,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         {
             return System.IO.File.Exists(path) ? System.IO.File.ReadAllText(path) : null;
         }
-        catch (System.IO.IOException)
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
         {
             return null;
         }
