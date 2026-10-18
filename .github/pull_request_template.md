@@ -4,4 +4,4 @@
 
 ## Test plan
 
-- [ ] `dotnet build -c Release` and `dotnet test -c Release` clean
+- [ ] `gate` from the repo root is clean
