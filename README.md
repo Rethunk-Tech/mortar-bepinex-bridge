@@ -13,7 +13,7 @@ The BepInEx loader's companion for [Mortar](https://github.com/Rethunk-Tech/mort
 ## Quick start
 
 ```sh
-dotnet build -c Release && dotnet test -c Release
+dotnet build -c Release && dotnet test --solution MortarBepInExBridge.slnx -c Release
 ```
 
 Prerequisites, packaging and install: [HUMANS.md](HUMANS.md).
@@ -23,7 +23,7 @@ Prerequisites, packaging and install: [HUMANS.md](HUMANS.md).
 - Loopback TCP channel: one connection per command, authenticated with a per-run token
 - Writes `mortar-bepinex-bridge.json` (`port`, `token`) in BepInEx's `config` folder and deletes it on exit
 - Commands: `ping`, `status` (game version, scene, loaded plugins) and `plugins` (structured list); on a measured launch `perf` and `perf start` (frame times, memory, and each plugin's main-thread time per frame, exclusive of nested timed calls)
-- Startup timing on a launch Mortar measures: a preloader patcher (`patchers/MortarBepInExBridge.Patcher.dll`) times each plugin's load (constructor and Awake) and the phases to the game's title scene, and writes `startup/<utc>.json` in the Mortar profile. Mortar asks for it by leaving `startup/.measure-launch` (holding the title scene's name) beside the profile's `BepInEx` folder; the launch consumes it, and a launch without it is not timed
+- Startup timing on a launch Mortar measures: a preloader patcher (`patchers/MortarBepInExBridge.Patcher.dll`) times each plugin's load (constructor and Awake) and the phases to the game's title scene, and writes `startup/<utc>.json` in the Mortar profile. Mortar asks for it by leaving `startup/.measure-launch` (holding the title scene's name) beside the profile's `BepInEx` folder; the launch consumes it, and a launch without it is not timed. The patcher also sets `MORTAR_MEASURED_LAUNCH=1` in the game's process, which is what enables `perf`
 - Optional loopback stream overlay for Mortar's OBS page: `GET`/`HEAD`/`OPTIONS` `/state`, off unless Mortar's setting is on (below)
 - Skip the intro, only when Mortar asks: Mortar's "Skip the intro" setting writes `intro` to `startup/skip-intro` in the profile folder, and the plugin stops the engine's own splash screen in any game (asked from a background thread until the first scene loads, since the engine runs no script frame before then) and starts Lethal Company without its boot animation or cold open, while the Online or LAN choice stays the player's. Mortar's crash check writes `menu`, and `MORTAR_SKIP_INTRO=1` in the game's environment (Mortar's sandbox and regress runs) means the same: the plugin also picks LAN, so the game reaches the main menu unattended. Without a request the plugin changes nothing in the game
 
@@ -55,7 +55,7 @@ The same framing as the SMAPI bridge: one connection per command. The client sen
 | `ping` | `ok` |
 | `status` | `ok {"gameVersion":"...","gameVersionSource":"game","scene":"...","plugins":[{"guid":"...","version":"...","location":"Pack/x.dll"}]}`; `location` is the plugin DLL's path below `BepInEx/plugins` (left out for one elsewhere), which tells apart two copies of one GUID and version; `gameVersion` is the version the game shows (`gameVersionSource` `game`; Lethal Company: `v81` from `GameNetworkManager.gameVersionNum`), else Unity's `Application.version` (`unity`) |
 | `plugins` | `ok [{"guid":"...","name":"...","version":"...","location":"..."}]` |
-| `perf` | `ok {"measured":false}` on an unmeasured launch; on a measured one `ok {"measured":true,"instrumented":...,"seconds":...,"frames":...,"fps":...,"frameMs":{"avg","p50","p95","p99","max"},"monoUsedBytes":...,"monoHeapBytes":...,"gcCollections":...,"baseline":{"frameMs","modsMs","withoutModsMs"},"plugins":[{"guid","msPerFrame","p95Ms","peakMs","share","callsPerFrame","patches","transpilers"}],"patchOwners":{"<harmony id>":["Type::Method"]}}`, rebuilt once a second `p95Ms` is the plugin's 95th-percentile cost per frame over all frames (about 10% resolution, zero for a plugin timed in under 5% of them), `share` its average over the average frame, and `baseline.withoutModsMs` the average frame less every plugin's timed time |
+| `perf` | `ok {"measured":false}` on an unmeasured launch; on a measured one `ok {"measured":true,"instrumented":...,"seconds":...,"frames":...,"fps":...,"frameMs":{"avg","p50","p95","p99","max"},"monoUsedBytes":...,"monoHeapBytes":...,"gcCollections":...,"baseline":{"frameMs","modsMs","withoutModsMs"},"plugins":[{"guid","msPerFrame","p95Ms","peakMs","share","callsPerFrame","patches","transpilers"}],"patchOwners":{"<harmony id>":["Type::Method"]}}`, rebuilt once a second. `p95Ms` is the plugin's 95th-percentile cost per frame over all frames (about 10% resolution, zero for a plugin timed in under 5% of them), `share` its average over the average frame, and `baseline.withoutModsMs` the average frame less every plugin's timed time |
 | `perf start` | `ok {"measured":true}`: restarts the window; the first one also wraps every plugin's Harmony patches and its own MonoBehaviours' Update, LateUpdate and FixedUpdate with timers |
 | anything else | `error: unknown command ...` |
 | wrong token | `error: unauthorized` |
