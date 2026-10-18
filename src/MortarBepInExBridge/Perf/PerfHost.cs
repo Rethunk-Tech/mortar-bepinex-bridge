@@ -140,13 +140,13 @@ internal sealed class PerfHost : MonoBehaviour
             if (info == null)
                 continue;
             foreach (Patch p in info.Prefixes)
-                yield return new PatchEdge(target, p.owner, p.PatchMethod, PatchKind.Prefix);
+                yield return new PatchEdge(target, p.owner, p.PatchMethod);
             foreach (Patch p in info.Postfixes)
-                yield return new PatchEdge(target, p.owner, p.PatchMethod, PatchKind.Postfix);
+                yield return new PatchEdge(target, p.owner, p.PatchMethod);
             foreach (Patch p in info.Finalizers)
-                yield return new PatchEdge(target, p.owner, p.PatchMethod, PatchKind.Finalizer);
+                yield return new PatchEdge(target, p.owner, p.PatchMethod);
             foreach (Patch p in info.Transpilers)
-                yield return new PatchEdge(target, p.owner, p.PatchMethod, PatchKind.Transpiler);
+                yield return new PatchEdge(target, p.owner, p.PatchMethod, transpiler: true);
         }
     }
 

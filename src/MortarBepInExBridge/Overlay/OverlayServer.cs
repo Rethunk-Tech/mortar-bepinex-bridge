@@ -23,8 +23,6 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
     private volatile string Snapshot = NotInGame;
     private volatile bool Stopped;
 
-    public int Port => ((IPEndPoint)this.Listener.LocalEndpoint).Port;
-
     public void Set(string json) => this.Snapshot = json;
 
     public void Start()

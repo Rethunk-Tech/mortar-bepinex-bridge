@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -21,10 +22,10 @@ internal sealed class LethalCompanyProvider(Func<string, Type?> find, Func<Type,
 
         int total = 0;
         int alive = 0;
-        foreach (object? player in Probe.Items(Probe.Member(round, "allPlayerScripts")) ?? Array.Empty<object>())
+        foreach (object? player in Probe.Member(round, "allPlayerScripts") as IEnumerable ?? Array.Empty<object>())
         {
-            bool controlled = Probe.Bool(Probe.Member(player, "isPlayerControlled"));
-            bool dead = Probe.Bool(Probe.Member(player, "isPlayerDead"));
+            bool controlled = Probe.Member(player, "isPlayerControlled") is true;
+            bool dead = Probe.Member(player, "isPlayerDead") is true;
             if (controlled || dead)
                 total++;
             if (controlled && !dead)
@@ -32,10 +33,10 @@ internal sealed class LethalCompanyProvider(Func<string, Type?> find, Func<Type,
         }
 
         object? time = Probe.Static(find("TimeOfDay"), "Instance");
-        string? moon = Probe.Text(Probe.Member(Probe.Member(round, "currentLevel"), "PlanetName"));
+        string? moon = Probe.Member(Probe.Member(round, "currentLevel"), "PlanetName")?.ToString();
         return new Dictionary<string, object?>
         {
-            ["playerName"] = Probe.Text(Probe.Member(local, "playerUsername")),
+            ["playerName"] = Probe.Member(local, "playerUsername")?.ToString(),
             ["moon"] = moon == null ? null : MoonNumber.Replace(moon, ""),
             ["crewAlive"] = alive,
             ["crewTotal"] = total,

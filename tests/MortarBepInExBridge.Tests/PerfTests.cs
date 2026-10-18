@@ -39,11 +39,11 @@ public class PerfTests
     {
         PatchEdge[] edges =
         [
-            new(M(nameof(GameUpdate)), "com.a", M(nameof(PrefixA)), PatchKind.Prefix),
-            new(M(nameof(GameUpdate)), "com.a", M(nameof(PostfixA)), PatchKind.Postfix),
-            new(M(nameof(GameDraw)), "com.a", M(nameof(PrefixA)), PatchKind.Prefix),
-            new(M(nameof(GameDraw)), "harmony.b", M(nameof(TranspilerB)), PatchKind.Transpiler),
-            new(M(nameof(GameDraw)), "bridge.perf", M(nameof(PrefixMine)), PatchKind.Prefix),
+            new(M(nameof(GameUpdate)), "com.a", M(nameof(PrefixA))),
+            new(M(nameof(GameUpdate)), "com.a", M(nameof(PostfixA))),
+            new(M(nameof(GameDraw)), "com.a", M(nameof(PrefixA))),
+            new(M(nameof(GameDraw)), "harmony.b", M(nameof(TranspilerB)), transpiler: true),
+            new(M(nameof(GameDraw)), "bridge.perf", M(nameof(PrefixMine))),
         ];
         // Only com.a's patches come from a plugin assembly Mortar knows; harmony.b's is listed under its Harmony ID.
         PatchGraph graph = PatchGraph.Build(edges, "bridge.perf", a => a == typeof(PerfTests).Assembly ? "com.a" : null);
@@ -127,7 +127,7 @@ public class PerfTests
         costs.Enter();
         costs.Exit(0, 3_000);
         costs.EndFrame();
-        PatchGraph graph = PatchGraph.Build([new(M(nameof(GameUpdate)), "com.a", M(nameof(PrefixA)), PatchKind.Prefix)], "x", _ => "com.a");
+        PatchGraph graph = PatchGraph.Build([new(M(nameof(GameUpdate)), "com.a", M(nameof(PrefixA)))], "x", _ => "com.a");
 
         JsonElement r = JsonDocument.Parse(PerfReport.Json(frames, costs, ["com.a"], graph, new Memory(1024, 2048, 3), 1_000_000)).RootElement;
 

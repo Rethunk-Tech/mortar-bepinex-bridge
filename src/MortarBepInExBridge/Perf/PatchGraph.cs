@@ -4,21 +4,13 @@ using System.Reflection;
 
 namespace MortarBepInExBridge.Perf;
 
-internal enum PatchKind
-{
-    Prefix,
-    Postfix,
-    Finalizer,
-    Transpiler,
-}
-
 /// <summary>One Harmony patch on a game method: who applied it and the method it runs.</summary>
-internal readonly struct PatchEdge(MethodBase target, string owner, MethodInfo patch, PatchKind kind)
+internal readonly struct PatchEdge(MethodBase target, string owner, MethodInfo patch, bool transpiler = false)
 {
     public MethodBase Target { get; } = target;
     public string Owner { get; } = owner;
     public MethodInfo Patch { get; } = patch;
-    public PatchKind Kind { get; } = kind;
+    public bool Transpiler { get; } = transpiler;
 }
 
 /// <summary>
@@ -48,7 +40,7 @@ internal sealed class PatchGraph
                 graph.Owners[e.Owner] = targets = new SortedSet<string>(StringComparer.Ordinal);
             targets.Add($"{e.Target.DeclaringType?.FullName}::{e.Target.Name}");
             graph.Patches[plugin] = graph.Patches.TryGetValue(plugin, out int n) ? n + 1 : 1;
-            if (e.Kind == PatchKind.Transpiler)
+            if (e.Transpiler)
             {
                 graph.Transpilers[plugin] = graph.Transpilers.TryGetValue(plugin, out int t) ? t + 1 : 1;
                 continue;

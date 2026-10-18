@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Reflection;
 
 namespace MortarBepInExBridge.Overlay;
@@ -24,8 +23,6 @@ internal static class Probe
         return method?.Invoke(method.IsStatic ? null : target, null);
     }
 
-    public static string? Text(object? value) => value?.ToString();
-
     public static int? Int(object? value) => value switch
     {
         int i => i,
@@ -39,10 +36,6 @@ internal static class Probe
         double d => (int)d,
         _ => null,
     };
-
-    public static bool Bool(object? value) => value is true;
-
-    public static IEnumerable? Items(object? value) => value as IEnumerable;
 
     private static object? Read(Type type, object? target, string name)
     {

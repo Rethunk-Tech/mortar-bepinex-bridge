@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace MortarBepInExBridge.Overlay;
@@ -29,7 +30,7 @@ internal sealed class ValheimProvider(Func<string, Type?> find) : IOverlayProvid
         var defeated = new List<string>();
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         object? zone = Probe.Static(find("ZoneSystem"), "instance");
-        foreach (object? key in Probe.Items(Probe.Call(zone, "GetGlobalKeys") ?? Probe.Member(zone, "m_globalKeys")) ?? Array.Empty<object>())
+        foreach (object? key in Probe.Call(zone, "GetGlobalKeys") as IEnumerable ?? Probe.Member(zone, "m_globalKeys") as IEnumerable ?? Array.Empty<object>())
         {
             if (key != null)
                 keys.Add(key.ToString() ?? "");
@@ -42,8 +43,8 @@ internal sealed class ValheimProvider(Func<string, Type?> find) : IOverlayProvid
 
         return new Dictionary<string, object?>
         {
-            ["playerName"] = Probe.Text(Probe.Call(player, "GetPlayerName")),
-            ["biome"] = Probe.Text(Probe.Call(player, "GetCurrentBiome")),
+            ["playerName"] = Probe.Call(player, "GetPlayerName")?.ToString(),
+            ["biome"] = Probe.Call(player, "GetCurrentBiome")?.ToString(),
             ["day"] = Probe.Int(Probe.Call(Probe.Static(find("EnvMan"), "instance"), "GetDay")),
             ["bossesDefeated"] = defeated,
             ["bossCount"] = defeated.Count,
