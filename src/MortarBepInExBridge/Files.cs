@@ -80,13 +80,40 @@ internal static class Files
         }
     }
 
-    // A Windows build has no mode bits to set, which includes the same build running under Proton.
+    // Unix mode bits, or a protected DACL for the current user on Windows (including Proton).
     private static void Restrict(string path)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && chmod(path, 0x180) != 0)
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            RestrictWindows(path);
+        else if (chmod(path, 0x180) != 0)
             throw new IOException($"Could not restrict permissions on {path}.");
+    }
+
+    private static void RestrictWindows(string path)
+    {
+        if (!ConvertStringSecurityDescriptorToSecurityDescriptor("D:P(A;;FA;;;OW)", 1, out IntPtr sd, IntPtr.Zero))
+            throw new IOException($"Could not restrict permissions on {path}.");
+        try
+        {
+            if (!SetFileSecurity(path, 0x80000004, sd))
+                throw new IOException($"Could not restrict permissions on {path}.");
+        }
+        finally
+        {
+            LocalFree(sd);
+        }
     }
 
     [DllImport("libc", SetLastError = true)]
     private static extern int chmod(string path, uint mode);
+
+    [DllImport("advapi32", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(
+        string stringSecurityDescriptor, uint stringSdRevision, out IntPtr securityDescriptor, IntPtr securityDescriptorSize);
+
+    [DllImport("advapi32", EntryPoint = "SetFileSecurityW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool SetFileSecurity(string path, uint securityInformation, IntPtr securityDescriptor);
+
+    [DllImport("kernel32")]
+    private static extern IntPtr LocalFree(IntPtr handle);
 }
