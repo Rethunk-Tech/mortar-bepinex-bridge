@@ -11,7 +11,7 @@ dotnet build -c Release
 dotnet test --solution MortarBepInExBridge.slnx -c Release
 ```
 
-BepInEx comes from the `BepInEx.Core` package (nuget.bepinex.dev, listed in `nuget.config`). UnityEngine comes from the `UnityEngine.Modules` package (2022.3.9, Lethal Company's Unity) on the same feed, so no game install is needed to build. Game assemblies are never committed.
+BepInEx comes from the `BepInEx.Core` package (nuget.bepinex.dev, listed in `nuget.config`). UnityEngine comes from the `UnityEngine.Modules` package (2022.3.62, Lethal Company's Unity) on the same feed, so no game install is needed to build. Game assemblies are never committed.
 
 `gate` from the repo root is the offline gate. `lefthook install` sets up the git hooks (needs `lefthook` and `gitleaks` on PATH).
 
