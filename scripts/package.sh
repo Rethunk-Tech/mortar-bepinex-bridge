@@ -9,14 +9,19 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 csproj="$root/src/MortarBepInExBridge/MortarBepInExBridge.csproj"
 patcher="$root/src/MortarBepInExBridge.Patcher/MortarBepInExBridge.Patcher.csproj"
 version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$csproj")"
-[ -n "$version" ] || { echo "no <Version> in $csproj" >&2; exit 1; }
+[ -n "$version" ] || {
+  echo "no <Version> in $csproj" >&2
+  exit 1
+}
 
 # Every dotnet invocation leaves an empty dir in TMPDIR, so it gets one that the trap removes.
 scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT
 export TMPDIR="$scratch"
-dotnet build "$csproj" -c Release
-dotnet build "$patcher" -c Release
+dotnet restore --locked-mode "$csproj"
+dotnet restore --locked-mode "$patcher"
+dotnet build "$csproj" -c Release --no-restore
+dotnet build "$patcher" -c Release --no-restore
 stage="$scratch/stage"
 mkdir -p "$stage/plugins" "$stage/patchers"
 cp "$root/src/MortarBepInExBridge/bin/Release/netstandard2.1/MortarBepInExBridge.dll" "$stage/plugins/"
