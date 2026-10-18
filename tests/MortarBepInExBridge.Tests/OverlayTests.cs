@@ -187,6 +187,12 @@ public class OverlayTests
     [InlineData("GET /state HTTP/1.1", null, 401)]
     [InlineData("GET /other?token=t HTTP/1.1", null, 404)]
     [InlineData("POST /state?token=t HTTP/1.1", null, 405)]
+    [InlineData("OPTIONS /state HTTP/1.1", null, 204)]
+    [InlineData("OPTIONS /state?token=t HTTP/1.1", null, 204)]
+    [InlineData("OPTIONS /state HTTP/1.1", "Bearer nope", 204)]
+    [InlineData("HEAD /state?token=t HTTP/1.1", null, 200)]
+    [InlineData("HEAD /state HTTP/1.1", "Bearer t", 200)]
+    [InlineData("HEAD /state HTTP/1.1", null, 401)]
     [InlineData("garbage", null, 400)]
     [InlineData("GET /state?token=% HTTP/1.1", null, 400)]
     [InlineData("GET /state?token=%2 HTTP/1.1", null, 400)]
@@ -199,8 +205,17 @@ public class OverlayTests
             headers["Authorization"] = auth;
         string reply = server.Answer(request, headers);
         Assert.StartsWith($"HTTP/1.1 {status} ", reply);
-        if (status == 200)
+        if (status == 200 && request.StartsWith("GET ", StringComparison.Ordinal))
             Assert.EndsWith("{\"inGame\":false}", reply);
+        if (status == 200 && request.StartsWith("HEAD ", StringComparison.Ordinal))
+            Assert.EndsWith("\r\n\r\n", reply);
+        if (status == 204)
+        {
+            Assert.Contains("Access-Control-Allow-Origin: *", reply);
+            Assert.Contains("Access-Control-Allow-Methods: GET, HEAD, OPTIONS", reply);
+            Assert.Contains("Access-Control-Allow-Headers: Authorization", reply);
+            Assert.EndsWith("\r\n\r\n", reply);
+        }
     }
 
     [Fact]

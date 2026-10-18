@@ -5,64 +5,6 @@ exists; this file is the only place that describes what does not.
 
 Sections are unordered.
 
-## Overlay HTTP answers OPTIONS and HEAD with 405
-
-`README.md` documents `GET /state` and says any other method gets an error
-status. `OverlayServer.Answer` at `OverlayServer.cs:99` returns 405 for every
-non-GET, including `OPTIONS` and `HEAD`. The 200 response already sends
-`Access-Control-Allow-Origin: *` (`OverlayServer.cs:149`) because OBS opens a
-`file://` page that fetches loopback cross-origin. A browser that puts the
-token in `Authorization: Bearer` (the header path README also documents) must
-preflight with `OPTIONS`. That preflight is 405 today, so the documented Bearer
-path does not work from the overlay page; `?token=` still does, because a GET
-with a query string is a simple request.
-
-Decided shape: in `Answer`, `OPTIONS /state` returns 204 with
-`Access-Control-Allow-Methods: GET, HEAD, OPTIONS`,
-`Access-Control-Allow-Headers: Authorization`, and the existing
-`Access-Control-Allow-Origin: *`, and does not require a token (a preflight
-has none). `HEAD /state` uses the same token check as GET and returns the same
-headers with an empty body. POST and unknown methods stay 405.
-`OverlayTests.ServerChecksMethodPathAndToken` (`OverlayTests.cs:168`) adds
-rows for OPTIONS 204 and HEAD 200/401. README's "any other method" sentence
-becomes GET/HEAD/OPTIONS are served, everything else 405.
-
-Rejected: answering OPTIONS on every path. Only `/state` is a resource.
-Rejected: sending `Access-Control-Allow-Headers` on GET without OPTIONS. That
-does not satisfy the preflight.
-
-This is deferred because it changes the documented error for OPTIONS/HEAD
-(405 → 204/200) and Mortar's OBS page may already use `?token=` only.
-
-### Read
-
-1. `src/MortarBepInExBridge/Overlay/OverlayServer.cs:94` `Answer` — method
-   switch at `:99` is GET-only. CORS headers are assembled in `Response` at
-   `:146`.
-2. `src/MortarBepInExBridge/Overlay/OverlayServer.cs:119` `TokenOf` — Bearer
-   header and `token` query. OPTIONS must not call this.
-3. `tests/MortarBepInExBridge.Tests/OverlayTests.cs:168` — the method/path
-   matrix. POST `/state` stays 405 (`:165`).
-4. `README.md:73` — the contract sentence that has to move with the code.
-
-### Traps
-
-- **A token on OPTIONS.** Browsers omit Authorization on preflight. Requiring
-  the overlay token there keeps Bearer broken.
-- **Allow-Headers must list Authorization.** Origin `*` alone is not enough
-  for a non-simple header.
-- **HEAD body.** Content-Length should match the snapshot size, body empty, or
-  clients that treat HEAD like GET with a truncated body will fail.
-
-### Acceptance
-
-- `OPTIONS /state` is 204 and includes Allow-Origin, Allow-Methods, and
-  Allow-Headers Authorization, with or without a token.
-- `HEAD /state` with a valid token is 200, no body; a bad token is 401.
-- `POST /state?token=…` remains 405. `GET /other` remains 404.
-- `GET /state` replies stay byte-identical for the same snapshot and token.
-- `gate` stays green. README names GET, HEAD, and OPTIONS.
-
 ## Overlay providers cover only Lethal Company and Valheim
 
 `OverlayProviders.For` (`IOverlayProvider.cs:22`) switches on

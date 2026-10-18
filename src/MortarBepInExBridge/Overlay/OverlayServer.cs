@@ -96,12 +96,15 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
         string[] parts = (request ?? "").Split([' '], 3, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 3)
             return Response(400, "{\"error\":\"bad request\"}");
-        if (parts[0] != "GET")
+        string method = parts[0];
+        if (method is not ("GET" or "HEAD" or "OPTIONS"))
             return Response(405, "{\"error\":\"method not allowed\"}");
         string target = parts[1];
         int query = target.IndexOf('?');
         if ((query < 0 ? target : target[..query]) != "/state")
             return Response(404, "{\"error\":\"not found\"}");
+        if (method == "OPTIONS")
+            return Response(204, "", "Access-Control-Allow-Methods: GET, HEAD, OPTIONS\r\nAccess-Control-Allow-Headers: Authorization\r\n");
         string? given;
         try
         {
@@ -113,7 +116,7 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
         }
         if (!Protocol.TokenMatches(this.Token, given))
             return Response(401, "{\"error\":\"unauthorized\"}", "WWW-Authenticate: Bearer\r\n");
-        return Response(200, this.Snapshot);
+        return Response(200, this.Snapshot, head: method == "HEAD");
     }
 
     private static string? TokenOf(string query, IReadOnlyDictionary<string, string> headers)
@@ -143,10 +146,12 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
         return Uri.UnescapeDataString(s);
     }
 
-    private static string Response(int status, string body, string extraHeaders = "")
+    private static string Response(int status, string body, string extraHeaders = "", bool head = false)
     {
-        string reason = status switch { 200 => "OK", 400 => "Bad Request", 401 => "Unauthorized", 404 => "Not Found", 405 => "Method Not Allowed", 431 => "Request Header Fields Too Large", _ => "Error" };
+        string reason = status switch { 200 => "OK", 204 => "No Content", 400 => "Bad Request", 401 => "Unauthorized", 404 => "Not Found", 405 => "Method Not Allowed", 431 => "Request Header Fields Too Large", _ => "Error" };
+        int length = status == 204 ? 0 : Encoding.UTF8.GetByteCount(body);
+        string payload = head || status == 204 ? "" : body;
         // Allow-Origin: the page OBS opens is a file:// URL, which fetches this loopback address cross-origin.
-        return $"HTTP/1.1 {status} {reason}\r\nContent-Type: application/json\r\nContent-Length: {Encoding.UTF8.GetByteCount(body)}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *\r\n{extraHeaders}Connection: close\r\n\r\n{body}";
+        return $"HTTP/1.1 {status} {reason}\r\nContent-Type: application/json\r\nContent-Length: {length}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *\r\n{extraHeaders}Connection: close\r\n\r\n{payload}";
     }
 }
