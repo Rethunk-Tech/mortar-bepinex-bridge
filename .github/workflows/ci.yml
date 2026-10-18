@@ -115,7 +115,11 @@ jobs:
           TCLI_AUTH_TOKEN: ${{ secrets.THUNDERSTORE_TOKEN }}
           DOTNET_ROLL_FORWARD: Major
         run: |
-          dotnet tool install --global tcli --version 0.2.4
+          curl -fsSL -o "$RUNNER_TEMP/tcli.0.2.4.nupkg" https://api.nuget.org/v3-flatcontainer/tcli/0.2.4/tcli.0.2.4.nupkg
+          echo "79f226174dbbca93738219ed73b0f62b72f88ad11e23c611cd2849fbab823abd  $RUNNER_TEMP/tcli.0.2.4.nupkg" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/tcli-src"
+          mv "$RUNNER_TEMP/tcli.0.2.4.nupkg" "$RUNNER_TEMP/tcli-src/"
+          dotnet tool install --global tcli --version 0.2.4 --add-source "$RUNNER_TEMP/tcli-src" --ignore-failed-sources
           tcli publish --config-path thunderstore.toml --file "dist/MortarBepInExBridge-${GITHUB_REF_NAME#v}.zip"
 
   # Nexus Mods hosts one page per game; both get the release's BepInEx-tree zip.
