@@ -15,16 +15,22 @@ public class FilesTests
     [Fact]
     public void ReadTextReportsWhenAPathExistsButIsNotReadable()
     {
+        if (OperatingSystem.IsWindows())
+            return;
         string dir = Path.Combine(Path.GetTempPath(), "mortar-files-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
+        string path = Path.Combine(dir, "unreadable");
+        File.WriteAllText(path, "x");
+        File.SetUnixFileMode(path, (UnixFileMode)0);
         try
         {
-            Assert.Null(Files.ReadText(dir, out string? error));
+            Assert.Null(Files.ReadText(path, out string? error));
             Assert.False(string.IsNullOrEmpty(error));
         }
         finally
         {
-            Directory.Delete(dir);
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            Directory.Delete(dir, recursive: true);
         }
     }
 }

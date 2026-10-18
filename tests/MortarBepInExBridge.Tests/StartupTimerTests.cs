@@ -1,6 +1,9 @@
+extern alias Patcher;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Xunit;
+using PluginId = Patcher::MortarBepInExBridge.PluginId;
+using StartupTimer = Patcher::MortarBepInExBridge.StartupTimer;
 
 namespace MortarBepInExBridge.Tests;
 

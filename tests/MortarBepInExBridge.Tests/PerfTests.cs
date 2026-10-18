@@ -1,7 +1,9 @@
+extern alias Patcher;
 using System.Reflection;
 using System.Text.Json;
 using MortarBepInExBridge.Perf;
 using Xunit;
+using StartupPatcher = Patcher::MortarBepInExBridge.StartupPatcher;
 
 namespace MortarBepInExBridge.Tests;
 
