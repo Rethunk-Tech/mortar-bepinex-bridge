@@ -30,14 +30,23 @@ jobs:
           dotnet-version: 10.0.x
       # The runner's apt shellcheck lags (0.9.0 on Ubuntu 24.04), so CI pins the release developers run.
       - name: shellcheck
+        if: ${{ !cancelled() }}
         run: |
           curl -fsSL -o "$RUNNER_TEMP/shellcheck.tar.xz" https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
           echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  $RUNNER_TEMP/shellcheck.tar.xz" | sha256sum -c -
           tar -xJf "$RUNNER_TEMP/shellcheck.tar.xz" -C "$RUNNER_TEMP"
           "$RUNNER_TEMP/shellcheck-v0.11.0/shellcheck" -x scripts/*.sh
-      - run: dotnet restore --locked-mode
-      - run: dotnet build -c Release --no-restore
-      - run: dotnet test --solution MortarBepInExBridge.slnx -c Release --no-build
+      - name: actionlint
+        if: ${{ !cancelled() }}
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash)
+          ./actionlint
+      - if: ${{ !cancelled() }}
+        run: dotnet restore --locked-mode
+      - if: ${{ !cancelled() }}
+        run: dotnet build -c Release --no-restore
+      - if: ${{ !cancelled() }}
+        run: dotnet test --solution MortarBepInExBridge.slnx -c Release --no-build
       - name: Package the Thunderstore zip
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
@@ -72,7 +81,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes dist/*
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release $GITHUB_REF_NAME already exists"
+          else
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes dist/*
+          fi
 
   # Uploads the zip the release job attached, after that release exists, so GitHub and Thunderstore carry the same file.
   thunderstore:
