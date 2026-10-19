@@ -80,10 +80,12 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
 
     /// <summary>The report as Mortar's StartupReport reads it. resolve maps "Name Version" to the plugin, null for one
     /// the chainloader no longer lists, which is then reported under that text.</summary>
-    public string Report(DateTime processStart, string loader, string game, Func<string, PluginId?> resolve)
+    public string Report(DateTime processStart, string loader, string game, Func<string, PluginId?> resolve,
+        IReadOnlyDictionary<string, long>? patchMs = null, IReadOnlyDictionary<string, long>? sampleMs = null)
     {
         var mods = new StringBuilder();
         long charged = 0;
+        long sampled = 0;
         foreach ((string plugin, long start, long end) in this.loads)
         {
             if (end < 0)
@@ -95,7 +97,15 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
             mods.Append("{\"id\":").Append(Json.Quote(id.Guid))
                 .Append(",\"name\":").Append(Json.Quote(id.Name))
                 .Append(",\"version\":").Append(Json.Quote(id.Version))
-                .Append(",\"entryMs\":").Append(end - start).Append('}');
+                .Append(",\"entryMs\":").Append(end - start);
+            if (patchMs != null && patchMs.TryGetValue(id.Guid, out long patches) && patches > 0)
+                mods.Append(",\"patchMs\":").Append(patches);
+            if (sampleMs != null && sampleMs.TryGetValue(id.Guid, out long share) && share > 0)
+            {
+                mods.Append(",\"sampleMs\":").Append(share);
+                sampled += share;
+            }
+            mods.Append('}');
         }
         long other = Math.Max(0, this.title - preloaderMs - charged);
         return new StringBuilder("{\"schema\":1")
@@ -108,7 +118,9 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
             .Append(",\"titleMenu\":").Append(this.firstScene)
             .Append(",\"titleScreen\":").Append(this.title)
             .Append("},\"entryTimed\":true,\"entryMissed\":").Append(this.loads.Count(l => l.End < 0))
-            .Append(",\"mods\":[").Append(mods).Append("],\"otherMs\":").Append(other).Append('}')
+            .Append(",\"mods\":[").Append(mods).Append("],\"otherMs\":").Append(other)
+            .Append(sampleMs == null ? "" : ",\"sampledOtherMs\":" + Math.Max(0, this.title - this.chainloaderDone - sampled))
+            .Append('}')
             .ToString();
     }
 

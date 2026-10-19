@@ -63,6 +63,35 @@ public class StartupTimerTests
     }
 
     [Fact]
+    public void PatchAndSharedTimeJoinTheirPluginsRowAndTheRestIsSampledOther()
+    {
+        var timer = new StartupTimer(1000, "MainMenu");
+        timer.OnLog("BepInEx", "Loading [Alpha 1.0.0]", 3100);
+        timer.OnLog("BepInEx", "Loading [Beta 2.0.0]", 3400);
+        timer.OnLog("BepInEx", "Chainloader startup complete", 3800);
+        Assert.True(timer.OnScene("MainMenu", 9000));
+        string json = timer.Report(new DateTime(2026, 10, 6, 18, 0, 0, DateTimeKind.Utc), "5.4.21.0", "v72",
+            text => text == "Alpha 1.0.0" ? new PluginId("com.a.alpha", "Alpha", "1.0.0") : new PluginId("com.b.beta", "Beta", "2.0.0"),
+            new Dictionary<string, long> { ["com.a.alpha"] = 120 },
+            new Dictionary<string, long> { ["com.b.beta"] = 700, ["com.a.alpha"] = 0 });
+        JsonElement r = JsonDocument.Parse(json).RootElement;
+
+        JsonElement[] mods = [.. r.GetProperty("mods").EnumerateArray()];
+        Assert.Equal(120, mods[0].GetProperty("patchMs").GetInt64());
+        Assert.False(mods[0].TryGetProperty("sampleMs", out _));
+        Assert.False(mods[1].TryGetProperty("patchMs", out _));
+        Assert.Equal(700, mods[1].GetProperty("sampleMs").GetInt64());
+        Assert.Equal(9000 - 3800 - 700, r.GetProperty("sampledOtherMs").GetInt64());
+    }
+
+    [Fact]
+    public void AnUnsampledLaunchReportsNoSampledShare()
+    {
+        JsonElement r = Run("MainMenu", ("BepInEx", "Loading [Alpha 1.0.0]", 3100));
+        Assert.False(r.TryGetProperty("sampledOtherMs", out _));
+    }
+
+    [Fact]
     public void WithoutATitleSceneTheFirstSceneEndsStartup()
     {
         var timer = new StartupTimer(1000, "");

@@ -32,6 +32,9 @@ internal sealed class PerfHost : MonoBehaviour
     private static int mainThread;
     private static CostTracker costs = new(0);
     private static Dictionary<MethodBase, int> pluginOf = [];
+    private static List<string> startupPlugins = [];
+    // Where the startup patcher looks for the shares (StartupPatcher.SharesKey), which it cannot reference.
+    private const string SharesKey = "MortarBepInExBridge.StartupShares";
 
     private readonly FrameStats frames = new();
     private ManualLogSource? log;
@@ -47,6 +50,19 @@ internal sealed class PerfHost : MonoBehaviour
         host.AddComponent<PerfHost>().log = log;
         mainThread = Thread.CurrentThread.ManagedThreadId;
         active = true;
+        // The measured launch times plugins from the first frame, so startup has shares without a perf start.
+        restart = true;
+        AppDomain.CurrentDomain.SetData(SharesKey, (Func<Dictionary<string, long>>)StartupShares);
+    }
+
+    /// <summary>Each plugin's main-thread milliseconds, by GUID, since the first frame: its patch methods and its own
+    /// Update loops, exclusive of the plugins they called into.</summary>
+    private static Dictionary<string, long> StartupShares()
+    {
+        var shares = new Dictionary<string, long>();
+        for (int i = 0; i < startupPlugins.Count; i++)
+            shares[startupPlugins[i]] = costs.Running(i) * 1000 / Stopwatch.Frequency;
+        return shares;
     }
 
     /// <summary>The <c>perf</c> reply; start also restarts the window, timing plugins from the first start on.</summary>
@@ -109,6 +125,7 @@ internal sealed class PerfHost : MonoBehaviour
 
         this.plugins = [.. timed.Select(t => t.Plugin).Concat(this.graph.Patches.Keys).Distinct()];
         Dictionary<string, int> index = this.plugins.Select((guid, i) => (guid, i)).ToDictionary(p => p.guid, p => p.i);
+        startupPlugins = this.plugins;
         costs = new CostTracker(this.plugins.Count);
         Dictionary<MethodBase, int> owners = [];
         foreach ((MethodInfo method, string plugin) in timed)

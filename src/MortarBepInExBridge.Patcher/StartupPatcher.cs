@@ -25,6 +25,8 @@ public static class StartupPatcher
     /// scene name; the launch consumes it.</summary>
     internal const string MeasureFile = ".measure-launch";
     /// <summary>Tells the bridge plugin, in this process only, that the launch is measured, so it measures in game too.</summary>
+    /// <summary>The AppDomain slot where the bridge plugin leaves a Func returning each plugin's in-game milliseconds by GUID.</summary>
+    internal const string SharesKey = "MortarBepInExBridge.StartupShares";
     internal const string MeasuredEnvVar = "MORTAR_MEASURED_LAUNCH";
 
     private static readonly ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("Mortar Startup");
@@ -59,6 +61,8 @@ public static class StartupPatcher
             Environment.SetEnvironmentVariable(MeasuredEnvVar, "1");
             processStart = ProcessStart();
             timer = new StartupTimer(Now(), title);
+            if (!PatchTiming.Install())
+                Log.LogWarning("Patch timing is off for this launch: this Harmony is not the one the bridge binds to.");
             listener = new Listener();
             BepInEx.Logging.Logger.Listeners.Add(listener);
             Log.LogInfo($"Timing this launch's plugins until scene {(title == "" ? "(first)" : title)}.");
@@ -140,9 +144,28 @@ public static class StartupPatcher
             .GroupBy(p => p.ToString())
             .ToDictionary(g => g.Key, g => new PluginId(g.First().Metadata.GUID, g.First().Metadata.Name, g.First().Metadata.Version.ToString()));
         string loader = typeof(Chainloader).Assembly.GetName().Version?.ToString() ?? "";
-        string report = done.Report(processStart, loader, Application.version, text => plugins.TryGetValue(text, out PluginId id) ? id : null);
+        Dictionary<string, string> byAssembly = [];
+        foreach (PluginInfo info in Chainloader.PluginInfos.Values)
+        {
+            if ((object?)info.Instance is { } instance)
+                byAssembly.TryAdd(instance.GetType().Assembly.GetName().Name, info.Metadata.GUID);
+        }
+        Dictionary<string, long> patches = ByPlugin(PatchTiming.Ms(), byAssembly);
+        var shares = AppDomain.CurrentDomain.GetData(SharesKey) as Func<Dictionary<string, long>>;
+        string report = done.Report(processStart, loader, Application.version, text => plugins.TryGetValue(text, out PluginId id) ? id : null, patches, shares?.Invoke());
         string path = StartupTimer.Write(startupDir, processStart, report);
         Log.LogInfo($"Startup report written to {path}.");
+    }
+
+    internal static Dictionary<string, long> ByPlugin(Dictionary<string, long> byAssembly, Dictionary<string, string> guidOf)
+    {
+        var sums = new Dictionary<string, long>();
+        foreach (KeyValuePair<string, long> p in byAssembly)
+        {
+            if (guidOf.TryGetValue(p.Key, out string? guid))
+                sums[guid] = sums.TryGetValue(guid, out long n) ? n + p.Value : p.Value;
+        }
+        return sums;
     }
 
     // Called from a scene load, never from inside a log event, while BepInEx is walking its listeners.

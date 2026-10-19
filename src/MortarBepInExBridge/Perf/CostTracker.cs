@@ -69,6 +69,9 @@ internal sealed class CostTracker(int plugins, double tickMs = 0)
 
     public long Total(int plugin) => this.total[plugin];
 
+    /// <summary>Total including the frame still running.</summary>
+    public long Running(int plugin) => this.total[plugin] + this.frame[plugin];
+
     public long Peak(int plugin) => this.peak[plugin];
 
     public long Calls(int plugin) => this.calls[plugin];
