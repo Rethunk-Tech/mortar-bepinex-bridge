@@ -17,4 +17,4 @@ C# BepInEx 5 plugin (netstandard2.1) that lets Mortar query a running game: the 
 
 `.gate.toml` makes the build restore with `--locked-mode` as CI does, so a drifted `packages.lock.json` fails locally too; the detected build restored unlocked. Budget: 10 s warm, 30 s cold; a cold run is mostly NuGet restore. Build and test are chained because test runs `--no-build`, and nothing else repeats work.
 
-Decided (NOMAD 2026-10-18): the OBS overlay keeps accepting `?token=` and sending `Access-Control-Allow-Origin: *`. OBS browser sources need both and the server is loopback-only; do not re-propose a header token or CORS removal.
+Decided: the OBS overlay keeps accepting `?token=` and sending `Access-Control-Allow-Origin: *`. OBS browser sources need both and the server is loopback-only; do not re-propose a header token or CORS removal.
