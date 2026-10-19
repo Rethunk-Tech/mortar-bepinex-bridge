@@ -14,6 +14,14 @@ public class ProtocolTests
         public IReadOnlyList<PluginRow> Plugins { get; } = [new("a.b", "A \"quoted\"", "1.2.3"), new("c.d", "C", "0.1.0", "Pack-C/c.dll")];
 
         public string Perf(bool start) => start ? "{\"started\":1}" : "{\"frames\":2}";
+
+        public List<string> Ran { get; } = [];
+
+        public string? Console(string line)
+        {
+            this.Ran.Add(line);
+            return line.StartsWith("bad") ? "unknown command\nsecond line" : null;
+        }
     }
 
     [Theory]
@@ -53,6 +61,8 @@ public class ProtocolTests
         public IReadOnlyList<PluginRow> Plugins { get; } = [];
 
         public string Perf(bool start) => "{}";
+
+        public string? Console(string line) => null;
     }
 
     [Fact]
@@ -60,7 +70,19 @@ public class ProtocolTests
     {
         string reply = Protocol.Handle("give money", new Game());
         Assert.StartsWith("error: unknown command \"give money\"", reply);
-        Assert.Contains("ping, status, plugins, perf or perf start", reply);
+        Assert.Contains("ping, status, plugins, perf, perf start or console <line>", reply);
+    }
+
+    [Fact]
+    public void ConsoleRunsTheLineWithItsCaseAndAnswersOneLine()
+    {
+        var game = new Game();
+        Assert.Equal("ok", Protocol.Handle("  Console   Spawn Boar 1 ", game));
+        Assert.Equal("ok", Protocol.Handle("CONSOLE help", game));
+        Assert.Equal(["Spawn Boar 1", "help"], game.Ran);
+        Assert.Equal("error: unknown command second line", Protocol.Handle("console bad", game));
+        Assert.StartsWith("error: console needs", Protocol.Handle("console", game));
+        Assert.StartsWith("error: console needs", Protocol.Handle("console   ", game));
     }
 
     [Fact]

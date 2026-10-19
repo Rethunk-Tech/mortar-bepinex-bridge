@@ -37,6 +37,18 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     string IGameView.Perf(bool start) => PerfHost.Reply(start);
 
+    private const int ConsoleWaitMs = 2000;
+    private readonly MainThreadQueue Main = new();
+    private IGameConsole? GameConsole;
+
+    string? IGameView.Console(string line)
+    {
+        IGameConsole? console = this.GameConsole;
+        return console == null
+            ? $"{Application.productName} has no console Mortar can reach"
+            : this.Main.Invoke(() => console.Run(line), ConsoleWaitMs);
+    }
+
     private void Awake()
     {
         GameVersion.Hook(new Harmony(Guid + ".version"), IntroSkip.Find);
@@ -63,6 +75,10 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         using (var rng = RandomNumberGenerator.Create())
             rng.GetBytes(raw);
         string token = BitConverter.ToString(raw).Replace("-", "").ToLowerInvariant();
+
+        this.GameConsole = GameConsoles.For(Application.productName, IntroSkip.Find);
+        if (this.GameConsole != null)
+            ConsoleRunner.Start(this.Main, this.Logger);
 
         this.Server = new BridgeServer(token, line =>
         {

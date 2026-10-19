@@ -52,6 +52,9 @@ internal interface IGameView
 
     /// <summary>The in-game performance summary as JSON; start restarts its window first.</summary>
     string Perf(bool start);
+
+    /// <summary>Runs a line in the game's own console; null when the game took it, else why it did not.</summary>
+    string? Console(string line);
 }
 
 /// <summary>The command protocol: Mortar sends <c>token\ncommand\n</c> and reads one reply line, <c>ok</c>, <c>ok {json}</c> or <c>error: message</c>.</summary>
@@ -71,15 +74,24 @@ internal static class Protocol
     }
 
     /// <summary>
-    /// Run one command line. The game has no command console, so the commands are queries:
+    /// Run one command line. Most commands are queries:
     /// <c>ping</c> answers <c>ok</c> (the same reply the SMAPI bridge gives a queued command); <c>status</c>, <c>plugins</c>,
-    /// <c>perf</c> and <c>perf start</c> answer <c>ok</c> and JSON.
+    /// <c>perf</c> and <c>perf start</c> answer <c>ok</c> and JSON; <c>console &lt;line&gt;</c> runs the line in the game's console and answers <c>ok</c>.
     /// </summary>
     public static string Handle(string line, IGameView game)
     {
         string name = line.Trim().ToLowerInvariant();
         if (name.Length == 0)
             return "error: empty command";
+        if (name == "console" || name.StartsWith("console ", StringComparison.Ordinal))
+        {
+            // The argument keeps its case: a game's console is case-sensitive about names and values.
+            string text = line.Trim()["console".Length..].Trim();
+            if (text.Length == 0)
+                return "error: console needs a command to run";
+            string? failure = game.Console(text);
+            return failure == null ? "ok" : "error: " + failure.Replace('\n', ' ').Replace('\r', ' ');
+        }
 
         switch (name)
         {
@@ -98,7 +110,7 @@ internal static class Protocol
             case "perf start":
                 return "ok " + game.Perf(start: true);
             default:
-                return "error: unknown command " + Json.Quote(name) + "; this game has no console, try ping, status, plugins, perf or perf start";
+                return "error: unknown command " + Json.Quote(name) + "; try ping, status, plugins, perf, perf start or console <line>";
         }
     }
 
