@@ -142,7 +142,7 @@ jobs:
         with:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
           mod_id: 315
-          file_id: 606
+          file_id: 8165133
           filename: MortarBepInExBridge-${{ steps.zip.outputs.version }}-nexus.zip
           version: ${{ steps.zip.outputs.version }}
           display_name: Mortar BepInEx Bridge
@@ -154,7 +154,7 @@ jobs:
         with:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
           mod_id: 4444
-          file_id: 25550
+          file_id: 8165145
           filename: MortarBepInExBridge-${{ steps.zip.outputs.version }}-nexus.zip
           version: ${{ steps.zip.outputs.version }}
           display_name: Mortar BepInEx Bridge
@@ -191,6 +191,12 @@ jobs:
           zip="MortarBepInExBridge-$version-nexus.zip"
           gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern "$zip"
           curl -fsS --config <(printf 'header = "X-Api-Token: %s"\n' "$CURSEFORGE_TOKEN") "$API/game/versions" >versions.json
+          # CurseForge refuses an upload with no game version, and some games (Valheim) expose none
+          # to the upload API: say so and leave that game's upload to the web form.
+          if [ "$(python3 -c 'import json; print(len(json.load(open("versions.json"))))')" = 0 ]; then
+            echo "::warning::$API lists no game versions; upload $zip to project $PROJECT by hand"
+            exit 0
+          fi
           metadata="$(python3 - "$version" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$GITHUB_REF_NAME" <<'PY'
           import json, sys
           ids = [v["id"] for v in json.load(open("versions.json"))]
