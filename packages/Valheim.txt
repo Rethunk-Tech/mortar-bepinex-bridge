@@ -1,0 +1,1 @@
+Mortar BepInEx Bridge for Valheim: lets the Mortar mod manager query the running game, run console commands in it and show stream-overlay values. Installed by Mortar.

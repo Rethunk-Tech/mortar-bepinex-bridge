@@ -1,0 +1,1 @@
+Lets the Mortar mod manager query a running BepInEx game over a token-protected loopback socket. Installed by Mortar.

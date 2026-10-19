@@ -1,0 +1,1 @@
+Mortar BepInEx Bridge for Lethal Company: lets the Mortar mod manager query the running game, skip its intro and show stream-overlay values. Installed by Mortar.

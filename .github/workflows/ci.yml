@@ -52,7 +52,7 @@ jobs:
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - if: ${{ !cancelled() }}
         run: gate
-      - name: Package the Thunderstore zip
+      - name: Package the zips
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/MortarBepInExBridge/MortarBepInExBridge.csproj)"
@@ -91,40 +91,6 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes dist/*
           fi
-
-  # Uploads the zip the release job attached, after that release exists, so GitHub and Thunderstore carry the same file.
-  thunderstore:
-    needs: release
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
-        with:
-          dotnet-version: 10.0.x
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
-        with:
-          name: dist
-          path: dist
-      # tcli targets net6.0/net7.0; roll-forward runs it on the .NET 10 runtime installed above.
-      - name: Publish to Thunderstore
-        env:
-          TCLI_AUTH_TOKEN: ${{ secrets.THUNDERSTORE_TOKEN }}
-          DOTNET_ROLL_FORWARD: Major
-        run: |
-          curl -fsSL -o "$RUNNER_TEMP/tcli.0.2.4.nupkg" https://api.nuget.org/v3-flatcontainer/tcli/0.2.4/tcli.0.2.4.nupkg
-          echo "79f226174dbbca93738219ed73b0f62b72f88ad11e23c611cd2849fbab823abd  $RUNNER_TEMP/tcli.0.2.4.nupkg" | sha256sum -c -
-          mkdir -p "$RUNNER_TEMP/tcli-src"
-          mv "$RUNNER_TEMP/tcli.0.2.4.nupkg" "$RUNNER_TEMP/tcli-src/"
-          dotnet tool install --global tcli --version 0.2.4 --add-source "$RUNNER_TEMP/tcli-src" --ignore-failed-sources
-          # One package per toml: the core build and one per game, each zip named after its package.
-          for config in thunderstore/*.toml; do
-            name="$(sed -n 's:^name = "\(.*\)"$:\1:p' "$config" | head -n 1)"
-            tcli publish --config-path "$config" --file "dist/$name-${GITHUB_REF_NAME#v}.zip"
-          done
 
   # Nexus Mods hosts one page per game; each gets its game's BepInEx-tree zip.
   nexus:
