@@ -5,7 +5,7 @@ C# BepInEx 5 plugin (netstandard2.1) that lets Mortar query a running game: the 
 - Build, test, packaging and release: [HUMANS.md](HUMANS.md).
 - Command protocol and discovery file: [README.md](README.md). The framing matches the SMAPI bridge so Mortar's `internal/bridge` client stays one implementation.
 - `Protocol` and `BridgeServer` know nothing of the game (`IGameView` is the seam), so tests need no game. Unity objects are main-thread only: the socket threads read copies the plugin keeps current, never `UnityEngine` calls.
-- The core build must work in any BepInEx 5 Mono game and holds no game types. Game code lives only in `src/MortarBepInExBridge/Games/<Game>/` behind `IGameHooks` (overlay provider, console, intro steps, version source), registered through `BuiltGame`; `-p:Game=<Game>` compiles that folder in, and a game's tests sit in `tests/.../Games/<Game>/`. One Thunderstore package per game (`MortarBepInExBridge_<Game>`, `thunderstore/<Game>.toml`), core for the rest. A game with nothing to hook has no folder.
+- The core build must work in any BepInEx 5 Mono game and holds no game types. Game code lives only in `src/MortarBepInExBridge/Games/<Game>/` behind `IGameHooks` (overlay provider, console, intro steps, version source), registered through `BuiltGame`; `-p:Game=<Game>` compiles that folder in, and a game's tests sit in `tests/.../Games/<Game>/`. One zip per game (`MortarBepInExBridge_<Game>`, description in `packages/<Game>.txt`), core for the rest, published on GitHub releases, Nexus Mods and CurseForge (not Thunderstore, at its team's request). A game with nothing to hook has no folder.
 - Do not launch the game from agents.
 - The version lives in the csproj `<Version>` and `Plugin.Version`; keep them equal.
 

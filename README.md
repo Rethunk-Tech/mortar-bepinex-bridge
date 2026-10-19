@@ -12,7 +12,7 @@ The BepInEx loader's companion for [Mortar](https://github.com/Rethunk-Tech/mort
 
 ## Builds
 
-One plugin per game, one Thunderstore package each: `MortarBepInExBridge_LethalCompany` (intro skip, stream overlay, the menu's game version), `MortarBepInExBridge_Valheim` (stream overlay, console), and the core `MortarBepInExBridge` for every other BepInEx 5 Mono game (query, perf, startup timing, engine splash skip). They share one plugin GUID and state file, so install exactly one. The Lethal Company, Valheim and overlay details below apply to the build that names them.
+One plugin per game, one zip each on GitHub releases, Nexus Mods and CurseForge: `MortarBepInExBridge_LethalCompany` (intro skip, stream overlay, the menu's game version), `MortarBepInExBridge_Valheim` (stream overlay, console), and the core `MortarBepInExBridge` for every other BepInEx 5 Mono game (query, perf, startup timing, engine splash skip). They share one plugin GUID and state file, so install exactly one. The Lethal Company, Valheim and overlay details below apply to the build that names them.
 
 ## Quick start
 
@@ -31,7 +31,7 @@ Prerequisites, packaging and install: [HUMANS.md](HUMANS.md).
 - Optional loopback stream overlay for Mortar's OBS page: `GET`/`HEAD`/`OPTIONS` `/state`, off unless Mortar's setting is on (below)
 - Skip the intro, only when Mortar asks: Mortar's "Skip the intro" setting writes `intro` to `startup/skip-intro` in the profile folder, and the plugin stops the engine's own splash screen in any game (asked from a background thread until the first scene loads, since the engine runs no script frame before then) and starts Lethal Company without its boot animation or cold open, while the Online or LAN choice stays the player's. Mortar's crash check writes `menu`, and `MORTAR_SKIP_INTRO=1` in the game's environment (Mortar's sandbox and regress runs) means the same: the plugin also picks LAN, so the game reaches the main menu unattended. Without a request the plugin changes nothing in the game
 
-## Thunderstore page description
+## Mod page description (Nexus Mods and CurseForge)
 
 **Mortar BepInEx Bridge** lets the Mortar mod manager see which BepInEx plugins a running game has loaded, so it can show their state without you reading `LogOutput.log`. It adds no gameplay and changes no game content.
 
