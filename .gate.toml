@@ -1,4 +1,4 @@
-# CI restores with --locked-mode, so a drifted packages.lock.json fails there; the detected build restores unlocked
+# verify.sh builds and tests each game build, then the core build, which the detected test step runs. CI restores with --locked-mode, so a drifted packages.lock.json fails there; the detected build restores unlocked
 # and would pass it.
 [gates.build]
-run = "dotnet restore --locked-mode && dotnet build MortarBepInExBridge.slnx -c Release --no-restore"
+run = "scripts/verify.sh"

@@ -120,9 +120,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/tcli-src"
           mv "$RUNNER_TEMP/tcli.0.2.4.nupkg" "$RUNNER_TEMP/tcli-src/"
           dotnet tool install --global tcli --version 0.2.4 --add-source "$RUNNER_TEMP/tcli-src" --ignore-failed-sources
-          tcli publish --config-path thunderstore.toml --file "dist/MortarBepInExBridge-${GITHUB_REF_NAME#v}.zip"
+          # One package per toml: the core build and one per game, each zip named after its package.
+          for config in thunderstore/*.toml; do
+            name="$(sed -n 's:^name = "\(.*\)"$:\1:p' "$config" | head -n 1)"
+            tcli publish --config-path "$config" --file "dist/$name-${GITHUB_REF_NAME#v}.zip"
+          done
 
-  # Nexus Mods hosts one page per game; both get the release's BepInEx-tree zip.
+  # Nexus Mods hosts one page per game; each gets its game's BepInEx-tree zip.
   nexus:
     needs: release
     if: startsWith(github.ref, 'refs/tags/v')
@@ -135,7 +139,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern "MortarBepInExBridge-$version-nexus.zip"
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern "MortarBepInExBridge_*-$version-nexus.zip"
           echo "version=$version" >>"$GITHUB_OUTPUT"
       - name: Upload to Nexus Mods (Lethal Company mod 315)
         uses: Nexus-Mods/upload-action@98532f7670c27cbecc78fae03fa3e278147827e2  # v1.0.0-beta.11
@@ -143,7 +147,7 @@ jobs:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
           mod_id: 25116968747323
           file_id: 8165133
-          filename: MortarBepInExBridge-${{ steps.zip.outputs.version }}-nexus.zip
+          filename: MortarBepInExBridge_LethalCompany-${{ steps.zip.outputs.version }}-nexus.zip
           version: ${{ steps.zip.outputs.version }}
           display_name: Mortar BepInEx Bridge
           archive_existing_version: true
@@ -155,7 +159,7 @@ jobs:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
           mod_id: 15749645078876
           file_id: 8165145
-          filename: MortarBepInExBridge-${{ steps.zip.outputs.version }}-nexus.zip
+          filename: MortarBepInExBridge_Valheim-${{ steps.zip.outputs.version }}-nexus.zip
           version: ${{ steps.zip.outputs.version }}
           display_name: Mortar BepInEx Bridge
           archive_existing_version: true
@@ -175,9 +179,11 @@ jobs:
           - game: Lethal Company
             host: lethal-company.curseforge.com
             project: 1747636
+            package: MortarBepInExBridge_LethalCompany
           - game: Valheim
             host: valheim.curseforge.com
             project: 1747644
+            package: MortarBepInExBridge_Valheim
     name: curseforge (${{ matrix.game }})
     steps:
       - name: Upload to CurseForge (project ${{ matrix.project }})
@@ -187,9 +193,10 @@ jobs:
           API: https://${{ matrix.host }}/api
           PROJECT: ${{ matrix.project }}
           GAME: ${{ matrix.game }}
+          PACKAGE: ${{ matrix.package }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          zip="MortarBepInExBridge-$version-nexus.zip"
+          zip="$PACKAGE-$version-nexus.zip"
           gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern "$zip"
           # CurseForge rejects a file byte-identical to one on another project, so each game's copy
           # carries its own archive comment; the extracted files are unchanged.

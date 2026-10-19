@@ -10,6 +10,10 @@
 
 The BepInEx loader's companion for [Mortar](https://github.com/Rethunk-Tech/mortar), the mod manager: a BepInEx 5 plugin that lets Mortar ask a running game which plugins are loaded. It is the BepInEx counterpart of [mortar-smapi-bridge](https://github.com/Rethunk-Tech/mortar-smapi-bridge) and works in any Unity Mono game that runs BepInEx 5; Lethal Company is the one Mortar tests it with. Mortar starts the game through its launcher and has no console to type into, so this plugin provides a query channel.
 
+## Builds
+
+One plugin per game, one Thunderstore package each: `MortarBepInExBridge_LethalCompany` (intro skip, stream overlay, the menu's game version), `MortarBepInExBridge_Valheim` (stream overlay, console), and the core `MortarBepInExBridge` for every other BepInEx 5 Mono game (query, perf, startup timing, engine splash skip). They share one plugin GUID and state file, so install exactly one. The Lethal Company, Valheim and overlay details below apply to the build that names them.
+
 ## Quick start
 
 ```sh

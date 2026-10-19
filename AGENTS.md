@@ -5,13 +5,13 @@ C# BepInEx 5 plugin (netstandard2.1) that lets Mortar query a running game: the 
 - Build, test, packaging and release: [HUMANS.md](HUMANS.md).
 - Command protocol and discovery file: [README.md](README.md). The framing matches the SMAPI bridge so Mortar's `internal/bridge` client stays one implementation.
 - `Protocol` and `BridgeServer` know nothing of the game (`IGameView` is the seam), so tests need no game. Unity objects are main-thread only: the socket threads read copies the plugin keeps current, never `UnityEngine` calls.
-- Keep the plugin generic: it must work in any BepInEx 5 Mono game, with no Lethal Company types.
+- The core build must work in any BepInEx 5 Mono game and holds no game types. Game code lives only in `src/MortarBepInExBridge/Games/<Game>/` behind `IGameHooks` (overlay provider, console, intro steps, version source), registered through `BuiltGame`; `-p:Game=<Game>` compiles that folder in, and a game's tests sit in `tests/.../Games/<Game>/`. One Thunderstore package per game (`MortarBepInExBridge_<Game>`, `thunderstore/<Game>.toml`), core for the rest. A game with nothing to hook has no folder.
 - Do not launch the game from agents.
 - The version lives in the csproj `<Version>` and `Plugin.Version`; keep them equal.
 
 ## Verify
 
-`gate` is the offline gate ([HUMANS.md](HUMANS.md)). Nothing is merged on a red gate.
+`gate` is the offline gate ([HUMANS.md](HUMANS.md)); `scripts/verify.sh` builds and tests every game build, then core. Nothing is merged on a red gate.
 
 ## Gate budget
 

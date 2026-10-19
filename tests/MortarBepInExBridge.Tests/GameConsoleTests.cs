@@ -46,13 +46,6 @@ public class GameConsoleTests
     }
 
     [Fact]
-    public void OnlyKnownGamesHaveAConsole()
-    {
-        Assert.NotNull(GameConsoles.For("Valheim", _ => null));
-        Assert.Null(GameConsoles.For("Lethal Company", _ => null));
-    }
-
-    [Fact]
     public void TheMainThreadRunsQueuedWorkAndTimesOutWithoutOne()
     {
         var queue = new MainThreadQueue();

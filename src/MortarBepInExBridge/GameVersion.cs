@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using HarmonyLib;
@@ -19,7 +20,7 @@ internal sealed class GameVersionSource(string type, string instance, string fie
 
 /// <summary>
 /// The version the game shows the player. Application.version is the Unity project's bundleVersion, which a game may
-/// never set (Lethal Company's is 0.1 while its menu shows v81 from GameNetworkManager.gameVersionNum). Sources name
+/// never set (Lethal Company's is 0.1 while its menu shows v81 from GameNetworkManager.gameVersionNum, which its game build names). Sources name
 /// types as strings like <see cref="IntroSkip"/>, so a game holding none of them reports Application.version.
 /// Mods change the field to keep modded lobbies apart (MoreCompany's Awake postfix adds 9950, so v81 reads v10031), so
 /// the value is taken in a prefix on the start-up message: Unity has deserialized the field by then, and every prefix
@@ -30,21 +31,16 @@ internal static class GameVersion
     private const BindingFlags Static = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
     private const BindingFlags Members = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-    public static readonly GameVersionSource[] Sources =
-    [
-        new("GameNetworkManager", "Instance", "gameVersionNum", "v{0}", "Awake"),
-    ];
-
     private static readonly ConcurrentDictionary<Type, GameVersionSource> Watched = new();
     private static readonly ConcurrentDictionary<Type, object> AtStartUp = new();
 
     /// <summary>Patches each source the game holds to keep its field's value from before mods touch it; the count
     /// patched.</summary>
-    public static int Hook(Harmony harmony, Func<string, Type?> find)
+    public static int Hook(Harmony harmony, Func<string, Type?> find, IEnumerable<GameVersionSource> sources)
     {
         var prefix = new HarmonyMethod(typeof(GameVersion).GetMethod(nameof(BeforeStartUp), BindingFlags.Static | BindingFlags.NonPublic)) { priority = Priority.First };
         int hooked = 0;
-        foreach (GameVersionSource source in Sources)
+        foreach (GameVersionSource source in sources)
         {
             Type? type = find(source.Type);
             MethodInfo? startUp = type?.GetMethod(source.StartUp, Members | BindingFlags.DeclaredOnly);
@@ -72,9 +68,9 @@ internal static class GameVersion
     /// <summary>The version from the first source the game holds an instance of, else null: as it was at start-up when
     /// <see cref="Hook"/> saw that, else as it is now. The instance appears only once the game's own start-up has made
     /// it, so the plugin asks again on each scene change.</summary>
-    public static string? Read(Func<string, Type?> find)
+    public static string? Read(Func<string, Type?> find, IEnumerable<GameVersionSource> sources)
     {
-        foreach (GameVersionSource source in Sources)
+        foreach (GameVersionSource source in sources)
         {
             Type? type = find(source.Type);
             if (type is null)

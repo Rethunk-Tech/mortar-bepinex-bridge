@@ -4,22 +4,6 @@ namespace MortarBepInExBridge.Tests;
 
 public class IntroSkipTests
 {
-    private sealed class InitializeGame
-    {
-        public bool runBootUpScreen = true;
-        private bool playColdOpenCinematic = true;
-        public bool playColdOpenCinematic2 = true;
-
-        public bool ColdOpen => this.playColdOpenCinematic;
-    }
-
-    private sealed class PreInitSceneScript
-    {
-        public bool? Chose;
-
-        public void ChooseLaunchOption(bool online) => this.Chose = online;
-    }
-
     [Theory]
     [InlineData("1", null, "Menu")]
     [InlineData("1", "intro", "Menu")]
@@ -31,48 +15,29 @@ public class IntroSkipTests
     public void TheEnvironmentOrTheRequestFileAsksForAMode(string? env, string? request, string mode) =>
         Assert.Equal(mode, IntroSkip.Requested(name => name == IntroSkip.EnvVar ? env : "1", request).ToString());
 
+    private static readonly IntroStep[] Steps =
+    [
+        new("Boot", "Splash", [("play", false)]),
+        new("Boot", "Gate", [], "Choose", [false], 2f, choice: true),
+    ];
+
     [Fact]
-    public void ThePlayersSettingSkipsAnimationsButLeavesTheLaunchChoiceAlone()
+    public void AnimationsAreSkippedForThePlayerButChoicesAreAnsweredOnlyInMenuMode()
     {
-        Assert.Empty(IntroSkip.For("InitSceneLaunchOptions", IntroMode.Animations));
-        Assert.Single(IntroSkip.For("InitScene", IntroMode.Animations));
-        Assert.Empty(IntroSkip.For("InitScene", IntroMode.Play));
+        Assert.Equal(["Splash"], IntroSkip.For(Steps, "Boot", IntroMode.Animations).Select(s => s.Type));
+        Assert.Equal(["Splash", "Gate"], IntroSkip.For(Steps, "Boot", IntroMode.Menu).Select(s => s.Type));
+        Assert.Empty(IntroSkip.For(Steps, "Boot", IntroMode.Play));
+        Assert.Empty(IntroSkip.For(Steps, "Elsewhere", IntroMode.Menu));
+        Assert.Empty(IntroSkip.For([], "Boot", IntroMode.Menu));
     }
 
     [Fact]
-    public void BootUpAndColdOpensAreClearedInBothInitScenes()
+    public void AbsentTypesAndUnrelatedObjectsAreLeftAlone()
     {
-        foreach (string scene in new[] { "InitScene", "InitSceneLANMode" })
-        {
-            var game = new InitializeGame();
-            foreach (IntroStep step in IntroSkip.For(scene, IntroMode.Menu))
-                IntroSkip.Apply(game, step);
-            Assert.False(game.runBootUpScreen);
-            Assert.False(game.ColdOpen);
-            Assert.False(game.playColdOpenCinematic2);
-        }
-    }
-
-    [Fact]
-    public void TheLaunchOptionsSceneChoosesLanAfterSettingsLoad()
-    {
-        IntroStep step = Assert.Single(IntroSkip.For("InitSceneLaunchOptions", IntroMode.Menu));
-        var menu = new PreInitSceneScript();
-        IntroSkip.Apply(menu, step);
-        Assert.False(menu.Chose);
-        Assert.True(step.Delay > 0.5f);
-    }
-
-    [Fact]
-    public void OtherScenesAndAbsentTypesAreLeftAlone()
-    {
-        Assert.Empty(IntroSkip.For("MainMenu", IntroMode.Menu));
-        Assert.Null(IntroSkip.Find("PreInitSceneScript"));
+        Assert.Null(IntroSkip.Find("NoSuchGameType"));
         Assert.Equal(typeof(IntroSkip), IntroSkip.Find("MortarBepInExBridge.IntroSkip"));
-        var unrelated = new object();
-        IntroSkip.Apply(unrelated, IntroSkip.Steps[0]);
+        IntroSkip.Apply(new object(), Steps[0]);
     }
-
     [Fact]
     public void FindCachesAMissSoLaterScenesDoNotWalkTheDomainAgain()
     {

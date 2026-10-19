@@ -48,19 +48,6 @@ internal static class IntroSkip
 
     private const BindingFlags Members = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-    private static readonly (string, object)[] NoBootUp = [("runBootUpScreen", false), ("playColdOpenCinematic", false), ("playColdOpenCinematic2", false)];
-
-    // Lethal Company. InitSceneLaunchOptions waits on every start for a click on Online or LAN; LAN needs no Steam
-    // session, and the delay lets IngamePlayerSettings finish loading the settings it saves on that choice. Both init
-    // scenes then play a boot animation, and on some starts a cold-open cinematic, before MainMenu. sceneLoaded runs
-    // after the scene's Awake and before its Start, so the flags Awake set are cleared before Start reads them.
-    public static readonly IntroStep[] Steps =
-    [
-        new("InitSceneLaunchOptions", "PreInitSceneScript", [], "ChooseLaunchOption", [false], 2f, choice: true),
-        new("InitScene", "InitializeGame", NoBootUp),
-        new("InitSceneLANMode", "InitializeGame", NoBootUp),
-    ];
-
     /// <summary>The mode asked for, from the environment and the request file's text (null when there is none).</summary>
     public static IntroMode Requested(Func<string, string?> env, string? request)
     {
@@ -74,8 +61,8 @@ internal static class IntroSkip
         };
     }
 
-    public static IEnumerable<IntroStep> For(string scene, IntroMode mode) =>
-        Steps.Where(s => s.Scene == scene && mode != IntroMode.Play && (!s.Choice || mode == IntroMode.Menu));
+    public static IEnumerable<IntroStep> For(IEnumerable<IntroStep> steps, string scene, IntroMode mode) =>
+        steps.Where(s => s.Scene == scene && mode != IntroMode.Play && (!s.Choice || mode == IntroMode.Menu));
 
     private static readonly ConcurrentDictionary<string, Type?> Types = new();
 

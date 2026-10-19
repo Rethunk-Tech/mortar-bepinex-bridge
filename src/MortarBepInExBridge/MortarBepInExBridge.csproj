@@ -10,6 +10,16 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
+  <!-- `-p:Game=<Name>` builds the plugin for one game: Games/<Name>/ holds that game's hooks. Empty is the core build for any BepInEx 5 Mono game. -->
+  <ItemGroup>
+    <Compile Remove="Games/**" />
+    <Compile Include="Games/$(Game)/**/*.cs" Condition="'$(Game)' != ''" />
+  </ItemGroup>
+
+  <Target Name="CheckGame" BeforeTargets="CoreCompile" Condition="'$(Game)' != '' And !Exists('Games/$(Game)')">
+    <Error Text="No Games/$(Game) folder: -p:Game names a folder below src/MortarBepInExBridge/Games." />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="BepInEx.Core" Version="5.4.21" PrivateAssets="all" />
     <PackageReference Include="UnityEngine.Modules" Version="2022.3.62" PrivateAssets="all" />

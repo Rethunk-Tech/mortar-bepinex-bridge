@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace MortarBepInExBridge.Overlay;
+using MortarBepInExBridge.Overlay;
+
+namespace MortarBepInExBridge.Games.Valheim;
 
 /// <summary>Valheim: player, biome, in-game day and bosses defeated.</summary>
 internal sealed class ValheimProvider(Func<string, Type?> find) : IOverlayProvider

@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace MortarBepInExBridge.Overlay;
+using MortarBepInExBridge.Overlay;
+
+namespace MortarBepInExBridge.Games.LethalCompany;
 
 /// <summary>Lethal Company: player, moon, crew, day, quota and ship credits. <c>findObject</c> finds the terminal, which
 /// exists only on the ship.</summary>

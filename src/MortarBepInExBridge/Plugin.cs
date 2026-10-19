@@ -19,6 +19,8 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     public const string Version = "0.2.8";
     private const string StateFileName = "mortar-bepinex-bridge.json";
 
+    private static IGameHooks? Hooks => BuiltGame.Hooks;
+
     private BridgeServer? Server;
     private OverlayServer? Overlay;
     private string? StatePath;
@@ -51,7 +53,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private void Awake()
     {
-        GameVersion.Hook(new Harmony(Guid + ".version"), IntroSkip.Find);
+        GameVersion.Hook(new Harmony(Guid + ".version"), IntroSkip.Find, Hooks?.VersionSources ?? []);
         this.ReadGameVersion();
         this.SceneValue = SceneManager.GetActiveScene().name;
         SceneManager.activeSceneChanged += (_, next) =>
@@ -68,7 +70,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         if (intro != IntroMode.Play)
         {
             this.Logger.LogInfo($"Mortar asked this launch to skip the intro ({intro}).");
-            IntroRunner.Start(this, this.Logger, intro);
+            IntroRunner.Start(this, this.Logger, intro, Hooks?.IntroSteps ?? []);
         }
 
         byte[] raw = new byte[32];
@@ -76,7 +78,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
             rng.GetBytes(raw);
         string token = BitConverter.ToString(raw).Replace("-", "").ToLowerInvariant();
 
-        this.GameConsole = GameConsoles.For(Application.productName, IntroSkip.Find);
+        this.GameConsole = Hooks?.Console(IntroSkip.Find);
         if (this.GameConsole != null)
             ConsoleRunner.Start(this.Main, this.Logger);
 
@@ -104,7 +106,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private void ReadGameVersion()
     {
-        string? own = GameVersion.Read(IntroSkip.Find);
+        string? own = GameVersion.Read(IntroSkip.Find, Hooks?.VersionSources ?? []);
         this.GameVersionValue = own ?? Application.version;
         this.GameVersionIsGames = own != null;
     }
@@ -136,10 +138,10 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
                 this.Logger.LogWarning($"Stream overlay is off: {why}.");
             return;
         }
-        IOverlayProvider? provider = OverlayProviders.For(Application.productName, IntroSkip.Find, this.FindObject);
+        IOverlayProvider? provider = Hooks?.Overlay(IntroSkip.Find, this.FindObject);
         if (provider == null)
         {
-            this.Logger.LogWarning($"Stream overlay is on, but there is no overlay for {Application.productName}.");
+            this.Logger.LogWarning($"Stream overlay is on, but this build has no overlay for {Application.productName}.");
             return;
         }
         try

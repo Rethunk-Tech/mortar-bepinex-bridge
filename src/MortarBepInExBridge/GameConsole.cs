@@ -56,16 +56,6 @@ internal sealed class ReflectionConsole(Func<Type?> type, string instanceMember,
     }
 }
 
-internal static class GameConsoles
-{
-    /// <summary>The console of the running game, or null for a game with none Mortar knows. A game that exposes one adds a line here.</summary>
-    public static IGameConsole? For(string productName, Func<string, Type?> find) => productName switch
-    {
-        "Valheim" => new ReflectionConsole(() => find("Console"), "instance", "TryRunCommand"),
-        _ => null,
-    };
-}
-
 /// <summary>Hands work from the socket threads to Unity's main thread and waits for its result.</summary>
 internal sealed class MainThreadQueue
 {

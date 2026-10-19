@@ -1,4 +1,5 @@
-# Read by tcli in CI's publish job. The version comes from manifest.json inside the zip scripts/package.sh builds.
+# One file per package, read by tcli in CI's publish job and by scripts/package.sh for the description. The version comes
+# from manifest.json inside the zip scripts/package.sh builds. This is the core build, for the games with no build of their own.
 [config]
 schemaVersion = "0.0.1"
 
@@ -13,8 +14,5 @@ containsNsfwContent = false
 
 [publish]
 repository = "https://thunderstore.io"
-communities = ["lethal-company", "valheim"]
+communities = ["repo", "peak", "riskofrain2", "content-warning"]
 
-[publish.categories]
-lethal-company = ["tools", "clientside"]
-valheim = ["tools", "client-side"]

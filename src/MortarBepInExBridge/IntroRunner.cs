@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using BepInEx.Logging;
 using UnityEngine;
@@ -19,12 +20,13 @@ internal sealed class IntroRunner : MonoBehaviour
     private static readonly TimeSpan SplashWait = TimeSpan.FromSeconds(30);
 
     private IntroMode mode;
+    private IReadOnlyList<IntroStep> steps = [];
     private volatile bool sceneLoaded;
     private volatile int splashAsks;
     private volatile string? splashError;
     private bool splashAsked;
 
-    public static void Start(Plugin plugin, ManualLogSource log, IntroMode mode)
+    public static void Start(Plugin plugin, ManualLogSource log, IntroMode mode, IReadOnlyList<IntroStep> steps)
     {
         var host = new GameObject("MortarBridgeIntroSkip") { hideFlags = HideFlags.HideAndDontSave };
         DontDestroyOnLoad(host);
@@ -32,6 +34,7 @@ internal sealed class IntroRunner : MonoBehaviour
         runner.plugin = plugin;
         runner.log = log;
         runner.mode = mode;
+        runner.steps = steps;
         Action? stop = IntroSkip.SplashStop(IntroSkip.Find);
         if (stop != null)
         {
@@ -74,7 +77,7 @@ internal sealed class IntroRunner : MonoBehaviour
         if (this.splashAsked && !this.sceneLoaded)
             this.log?.LogInfo($"Intro skip: asked the engine to stop its splash screen {this.splashAsks} times before scene {scene.name} (error: {this.splashError ?? "none"}).");
         this.sceneLoaded = true;
-        foreach (IntroStep step in IntroSkip.For(scene.name, this.mode))
+        foreach (IntroStep step in IntroSkip.For(this.steps, scene.name, this.mode))
             this.StartCoroutine(this.RunStep(step));
     }
 

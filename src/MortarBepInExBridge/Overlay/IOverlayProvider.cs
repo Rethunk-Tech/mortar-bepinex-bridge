@@ -13,20 +13,9 @@ internal interface IOverlayProvider
     Dictionary<string, object?>? Read();
 }
 
-/// <summary>Picks the provider for the running game.</summary>
+/// <summary>Turns a provider's values into the overlay's JSON.</summary>
 internal static class OverlayProviders
 {
-    /// <param name="productName">Unity's Application.productName.</param>
-    /// <param name="find">Looks a game type up by name.</param>
-    /// <param name="findObject">Finds the one live object of a Unity type, or null; the caller may cache it.</param>
-    public static IOverlayProvider? For(string productName, Func<string, Type?> find, Func<Type, object?> findObject) =>
-        productName switch
-        {
-            "Lethal Company" => new LethalCompanyProvider(find, findObject),
-            "Valheim" => new ValheimProvider(find),
-            _ => null,
-        };
-
     /// <summary>The JSON for the provider's current values; a provider that throws reads as not in game.</summary>
     public static string Snapshot(IOverlayProvider provider, Action<Exception> onError)
     {
