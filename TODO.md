@@ -156,17 +156,17 @@ be confirmed in-game; a wrong field is worse than `unity`.
 
 `Protocol.Handle` (`Protocol.cs:76`) has `perf` and `perf start`.
 `IGameView.Perf(bool start)` (`Protocol.cs:38`) restarts the window when
-start is true. `PerfHost.Reply` (`PerfHost.cs:53`) sets `restart` and, on
+start is true. `PerfSwitch.Reply` (`PerfSwitch.cs:26`) sets `restart` and, on
 the first start, wraps Harmony patches. There is no command that ends
-instrumentation or freezes the window. An unmeasured launch answers
-`{"measured":false}` for both. Unknown-command help lists `perf or perf start`
+instrumentation or freezes the window. A launch that has not started
+measuring answers `{"measured":false}` to `perf`. Unknown-command help lists `perf or perf start`
 (`Protocol.cs:81`).
 
 Decided shape: only if Mortar's single `internal/bridge` client grows a stop.
 Then `perf stop` would set a flag that `PerfHost.Update` honours by skipping
 `frames.Add` / leaving `summary` as the last JSON, without unpatching Harmony
 (unpatch mid-frame is unsafe). Reply `ok {"measured":true}` or
-`{"measured":false}` matching today's start-on-unmeasured rule.
+`{"measured":false}` when measuring never started.
 
 Rejected: unpatching Harmony on stop. Rejected: adding the verb in this
 bridge first, which would fork the shared client.
@@ -180,7 +180,7 @@ Mortar can call.
 1. `src/MortarBepInExBridge/Protocol.cs:58` `Handle` — the switch and help
    list at `:81`.
 2. `src/MortarBepInExBridge/Protocol.cs:38` `IGameView.Perf` — boolean start.
-3. `src/MortarBepInExBridge/Perf/PerfHost.cs:53` `Reply` — unmeasured vs
+3. `src/MortarBepInExBridge/Perf/PerfSwitch.cs:26` `Reply` — unmeasured vs
    restart.
 4. `tests/MortarBepInExBridge.Tests/ProtocolTests.cs:19` — command table and
    unknown-command text at `:38`.
@@ -191,8 +191,8 @@ Mortar can call.
 - **One client.** AGENTS.md: framing matches the SMAPI bridge. A BepInEx-only
   verb is dead until Mortar learns it, and SMAPI's profiler is a different
   shape.
-- **Unmeasured `perf start`.** Today it does not start measuring; stop must
-  not either.
+- **Unmeasured `perf start`.** It starts measuring; `perf stop` before any
+  start must not.
 - **Help string.** Adding a verb updates the unknown-command list and the
   README table in the same commit.
 
@@ -200,7 +200,7 @@ Mortar can call.
 
 - Existing `ping` / `status` / `plugins` / `perf` / `perf start` replies are
   unchanged.
-- If built: `perf stop` on a measured launch keeps `measured` true and stops
-  accumulating frames; on an unmeasured launch it is `{"measured":false}`.
+- If built: `perf stop` after measuring started keeps `measured` true and stops
+  accumulating frames; before any start it is `{"measured":false}`.
 - Mortar's bridge client understands the verb in the same release.
 - `gate` stays green.

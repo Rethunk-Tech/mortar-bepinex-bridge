@@ -171,6 +171,32 @@ public class PerfTests
     }
 
     [Fact]
+    public void PerfStartTurnsMeasuringOnForALaunchThatWasNotMeasured()
+    {
+        var perf = new PerfSwitch();
+        Assert.Equal(PerfReport.Unmeasured, perf.Reply(false));
+        Assert.False(perf.Active);
+        Assert.False(perf.TakeRestart());
+
+        Assert.Equal("{\"measured\":true}", perf.Reply(true));
+        Assert.True(perf.Active);
+        Assert.True(perf.TakeRestart());
+        Assert.False(perf.TakeRestart());
+        perf.Summary = "{\"measured\":true,\"frames\":1}";
+        Assert.Equal("{\"measured\":true,\"frames\":1}", perf.Reply(false));
+    }
+
+    [Fact]
+    public void AFailedMeasureStaysOffThroughALaterStart()
+    {
+        var perf = new PerfSwitch();
+        perf.Start();
+        perf.Fail();
+        Assert.Equal(PerfReport.Unmeasured, perf.Reply(true));
+        Assert.False(perf.Active);
+    }
+
+    [Fact]
     public void ThePatcherAndThePluginAgreeOnTheMeasuredSignal()
     {
         Assert.Equal(MeasuredLaunch.EnvVar, StartupPatcher.MeasuredEnvVar);

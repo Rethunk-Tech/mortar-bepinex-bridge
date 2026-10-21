@@ -64,8 +64,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         // Only a real quit stops the server: in Lethal Company, with BepInEx's default HideManagerGameObject=false, the
         // first scene load destroys the manager object and this component with it, while the game runs on.
         Application.quitting += this.Shutdown;
-        if (MeasuredLaunch.Requested(Environment.GetEnvironmentVariable))
-            PerfHost.Start(this.Logger);
+        PerfHost.Start(this.Logger, MeasuredLaunch.Requested(Environment.GetEnvironmentVariable));
         IntroMode intro = IntroSkip.Requested(Environment.GetEnvironmentVariable, ReadProfileFile(IntroSkip.RequestFile));
         if (intro != IntroMode.Play)
         {

@@ -14,21 +14,19 @@ using UnityEngine.Profiling;
 namespace MortarBepInExBridge.Perf;
 
 /// <summary>
-/// In-game performance on a launch Mortar measures: frame times and memory from the start, and, from the first
-/// <c>perf start</c>, each plugin's main-thread time per frame. That time is its Harmony prefixes, postfixes and
+/// In-game performance: frame times, memory and each plugin's main-thread time per frame, from the first frame on a
+/// launch Mortar measures and from the first <c>perf start</c> on any other. That time is its Harmony prefixes, postfixes and
 /// finalizers (each patch method is itself wrapped with a timer) and its own MonoBehaviours' Update, LateUpdate and
 /// FixedUpdate. It runs on an object of its own that scene loads leave alone, since Lethal Company's first scene load
-/// destroys the plugin's object. Unity is main-thread only, so the socket threads read the summary the main thread
-/// rebuilds once a second and only flag a restart.
+/// destroys the plugin's object. Unity is main-thread only, so the plugin creates it idle in Awake on every launch and
+/// the socket threads only flip <see cref="PerfSwitch"/> and read the summary the main thread rebuilds once a second.
 /// </summary>
 internal sealed class PerfHost : MonoBehaviour
 {
     private const string HarmonyId = Plugin.Guid + ".perf";
     private static readonly string[] UpdateMethods = ["Update", "LateUpdate", "FixedUpdate"];
 
-    private static volatile bool active;
-    private static volatile bool restart;
-    private static volatile string summary = PerfReport.Unmeasured;
+    private static readonly PerfSwitch perf = new();
     private static int mainThread;
     private static CostTracker costs = new(0);
     private static Dictionary<MethodBase, int> pluginOf = [];
@@ -43,15 +41,17 @@ internal sealed class PerfHost : MonoBehaviour
     private int collectionsAtStart;
     private float nextSummary;
 
-    public static void Start(ManualLogSource log)
+    public static void Start(ManualLogSource log, bool measuredLaunch)
     {
         var host = new GameObject("MortarBridgePerf") { hideFlags = HideFlags.HideAndDontSave };
         DontDestroyOnLoad(host);
         host.AddComponent<PerfHost>().log = log;
         mainThread = Thread.CurrentThread.ManagedThreadId;
-        active = true;
-        // The measured launch times plugins from the first frame, so startup has shares without a perf start.
-        restart = true;
+        if (!measuredLaunch)
+            return;
+        // The measured launch times plugins from the first frame, so startup has shares without a perf start. An
+        // on-demand start never registers them: its window does not begin at the first frame.
+        perf.Start();
         AppDomain.CurrentDomain.SetData(SharesKey, (Func<Dictionary<string, long>>)StartupShares);
     }
 
@@ -65,26 +65,16 @@ internal sealed class PerfHost : MonoBehaviour
         return shares;
     }
 
-    /// <summary>The <c>perf</c> reply; start also restarts the window, timing plugins from the first start on.</summary>
-    public static string Reply(bool start)
-    {
-        if (!active)
-            return PerfReport.Unmeasured;
-        if (start)
-        {
-            restart = true;
-            return "{\"measured\":true}";
-        }
-        return summary;
-    }
+    public static string Reply(bool start) => perf.Reply(start);
 
     private void Update()
     {
         try
         {
-            if (restart)
+            if (!perf.Active)
+                return;
+            if (perf.TakeRestart())
             {
-                restart = false;
                 if (this.graph == null)
                     this.Instrument();
                 this.frames.Reset();
@@ -97,13 +87,13 @@ internal sealed class PerfHost : MonoBehaviour
             {
                 this.nextSummary = Time.unscaledTime + 1;
                 var memory = new Memory(Profiler.GetMonoUsedSizeLong(), Profiler.GetMonoHeapSizeLong(), GC.CollectionCount(0) - this.collectionsAtStart);
-                summary = PerfReport.Json(this.frames, costs, this.plugins, this.graph, memory, Stopwatch.Frequency);
+                perf.Summary = PerfReport.Json(this.frames, costs, this.plugins, this.graph, memory, Stopwatch.Frequency);
             }
         }
         catch (Exception ex)
         {
             // A measuring failure must never reach the game.
-            active = false;
+            perf.Fail();
             this.enabled = false;
             this.log?.LogWarning($"In-game measuring is off for this launch: {ex.Message}");
         }
