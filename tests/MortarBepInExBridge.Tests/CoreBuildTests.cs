@@ -1,3 +1,5 @@
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using Xunit;
 
 namespace MortarBepInExBridge.Tests;
@@ -8,7 +10,13 @@ public class CoreBuildTests
     [Fact]
     public void TheCoreBuildHasNoGameHooks() => Assert.Null(BuiltGame.Hooks);
 
+    // Read from metadata: loading the types needs UnityEngine and BepInEx, which the plugin references but never ships.
     [Fact]
-    public void TheCoreBuildReferencesNoGameTypes() =>
-        Assert.DoesNotContain(typeof(BuiltGame).Assembly.GetTypes(), t => t.Namespace?.StartsWith("MortarBepInExBridge.Games") == true);
+    public void TheCoreBuildReferencesNoGameTypes()
+    {
+        using var file = File.OpenRead(typeof(BuiltGame).Assembly.Location);
+        using var pe = new PEReader(file);
+        MetadataReader md = pe.GetMetadataReader();
+        Assert.DoesNotContain(md.TypeDefinitions, h => md.GetString(md.GetTypeDefinition(h).Namespace).StartsWith("MortarBepInExBridge.Games", StringComparison.Ordinal));
+    }
 }

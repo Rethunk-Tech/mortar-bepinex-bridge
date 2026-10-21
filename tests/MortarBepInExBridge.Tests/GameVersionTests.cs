@@ -11,9 +11,24 @@ public class GameVersionTests
         public int version = 1;
     }
 
+    // Its own type, because a start-up value once kept stays for that type and would leak into the other tests.
+    private sealed class StartedManager
+    {
+        public static StartedManager? Instance { get; set; }
+
+        public int version = 1;
+    }
+
     private static readonly GameVersionSource[] Sources = [new("Manager", "Instance", "version", "v{0}", "Awake")];
 
-    private static Type? Find(string name) => name == "Manager" ? typeof(Manager) : null;
+    private static readonly GameVersionSource[] StartedSources = [new("StartedManager", "Instance", "version", "v{0}", "Awake")];
+
+    private static Type? Find(string name) => name switch
+    {
+        "Manager" => typeof(Manager),
+        "StartedManager" => typeof(StartedManager),
+        _ => null,
+    };
 
     [Fact]
     public void AGameReportsItsOwnVersionOnceItHasMadeTheInstance()
@@ -27,12 +42,12 @@ public class GameVersionTests
     [Fact]
     public void AVersionAModChangesAfterStartUpReadsAsTheGameSetIt()
     {
-        GameVersion.Watch(typeof(Manager), Sources[0]);
-        var made = new Manager { version = 81 };
+        GameVersion.Watch(typeof(StartedManager), StartedSources[0]);
+        var made = new StartedManager { version = 81 };
         GameVersion.BeforeStartUp(made);
         made.version += 9950;
-        Manager.Instance = made;
-        Assert.Equal("v81", GameVersion.Read(Find, Sources));
+        StartedManager.Instance = made;
+        Assert.Equal("v81", GameVersion.Read(Find, StartedSources));
     }
 
     [Fact]
