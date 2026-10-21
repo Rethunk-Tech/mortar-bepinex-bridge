@@ -1,4 +1,4 @@
-# verify.sh builds and tests each game build, then the core build, which the detected test step runs. CI restores with --locked-mode, so a drifted packages.lock.json fails there; the detected build restores unlocked
+# verify.sh builds and tests each game build, then the core build; gate does not run its detected test step beside a declared build. CI restores with --locked-mode, so a drifted packages.lock.json fails there; the detected build restores unlocked
 # and would pass it.
 [gates.build]
 run = "scripts/verify.sh"
