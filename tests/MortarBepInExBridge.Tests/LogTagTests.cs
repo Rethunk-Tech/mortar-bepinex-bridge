@@ -16,21 +16,21 @@ public class LogTagTests
 
     [Fact]
     public void TheCallSiteIsTheFirstFrameOutsideTheLogger() =>
-        Assert.StartsWith($"{nameof(LogTagTests)}::{nameof(TheCallSiteIsTheFirstFrameOutsideTheLogger)}@", Log());
+        Assert.Equal($"{nameof(LogTagTests)}::{nameof(TheCallSiteIsTheFirstFrameOutsideTheLogger)}", Log());
 
     // Stands in for the logging code, whose frames are skipped.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static string? Log() => LogTag.CallSite(new StackTrace(0, false), m => m.Name == nameof(Log));
 
     [Fact]
-    public void AHiddenSourceDropsItsLinesForEveryObjectOrOne()
+    public void AHiddenSourceDropsItsLinesByTextAndObject()
     {
-        var hidden = LogTag.ParseHidden("A::B@1\t\r\nC::D@2\tEnv/Ship\nnot a source\n");
-        Assert.True(LogTag.Hides(hidden, "A::B@1", null));
-        Assert.True(LogTag.Hides(hidden, "A::B@1", "Any/Path"));
-        Assert.True(LogTag.Hides(hidden, "C::D@2", "Env/Ship"));
-        Assert.False(LogTag.Hides(hidden, "C::D@2", "Env/Other"));
-        Assert.False(LogTag.Hides(hidden, "C::D@3", null));
-        Assert.False(LogTag.Hides(LogTag.ParseHidden(null), "A::B@1", null));
+        var hidden = LogTag.ParseHidden("A::B\tCould not build #\t\r\nC::D\t#\tEnv/Ship\nnot a source\n");
+        Assert.True(LogTag.Hides(hidden, "A::B", () => "Could not build 3", null));
+        Assert.False(LogTag.Hides(hidden, "A::B", () => "Built 3", null));
+        Assert.True(LogTag.Hides(hidden, "C::D", () => "1", "Env/Ship"));
+        Assert.False(LogTag.Hides(hidden, "C::D", () => "1", "Env/Other"));
+        Assert.False(LogTag.Hides(hidden, "E::F", () => throw new InvalidOperationException("formatted a line no rule names"), null));
+        Assert.Equal("[Dissonance:Recording] (#) Started", LogTag.Mask("[Dissonance:Recording] (16:34:55.653) Started\nmore"));
     }
 }
