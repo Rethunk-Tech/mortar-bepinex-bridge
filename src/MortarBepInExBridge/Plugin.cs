@@ -18,6 +18,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     public const string Guid = "Rethunk.MortarBepInExBridge";
     public const string Version = "0.3.2";
     private const string StateFileName = "mortar-bepinex-bridge.json";
+    private const string HiddenLogSourcesFile = "startup/hidden-log-sources";
 
     private static IGameHooks? Hooks => BuiltGame.Hooks;
 
@@ -53,6 +54,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private void Awake()
     {
+        LogSources.Install(ReadProfileFile(HiddenLogSourcesFile));
         GameVersion.Hook(new Harmony(Guid + ".version"), IntroSkip.Find, Hooks?.VersionSources ?? []);
         this.ReadGameVersion();
         this.SceneValue = SceneManager.GetActiveScene().name;
