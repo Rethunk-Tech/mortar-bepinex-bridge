@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -93,7 +94,7 @@ internal sealed class PerfHost : MonoBehaviour
         catch (Exception ex)
         {
             // A measuring failure must never reach the game.
-            perf.Fail();
+            perf.Fail(ex.Message);
             this.enabled = false;
             this.log?.LogWarning($"In-game measuring is off for this launch: {ex.Message}");
         }
@@ -111,7 +112,11 @@ internal sealed class PerfHost : MonoBehaviour
         this.graph = PatchGraph.Build(Edges(), HarmonyId, a => assemblies.TryGetValue(a, out string? guid) ? guid : null);
         List<(MethodInfo Method, string Plugin)> timed = [.. this.graph.Timed];
         foreach (KeyValuePair<Assembly, string> plugin in assemblies)
-            timed.AddRange(OwnUpdates(plugin.Key).Select(m => (m, plugin.Value)));
+        {
+            timed.AddRange(LoadableTypes.Collect(TypesOf(plugin.Key), UpdatesOf, out int skipped).Select(m => (m, plugin.Value)));
+            if (skipped > 0)
+                this.log?.LogWarning($"Measuring skips {skipped} types of {plugin.Value} that could not be loaded.");
+        }
 
         this.plugins = [.. timed.Select(t => t.Plugin).Concat(this.graph.Patches.Keys).Distinct()];
         Dictionary<string, int> index = this.plugins.Select((guid, i) => (guid, i)).ToDictionary(p => p.guid, p => p.i);
@@ -157,27 +162,27 @@ internal sealed class PerfHost : MonoBehaviour
         }
     }
 
-    private static IEnumerable<MethodInfo> OwnUpdates(Assembly assembly)
+    private static Type?[] TypesOf(Assembly assembly)
     {
-        Type?[] types;
         try
         {
-            types = assembly.GetTypes();
+            return assembly.GetTypes();
         }
         catch (ReflectionTypeLoadException ex)
         {
-            types = ex.Types;
+            return ex.Types;
         }
+    }
+
+    private static IEnumerable<MethodInfo> UpdatesOf(Type type)
+    {
+        if (type.ContainsGenericParameters || !typeof(MonoBehaviour).IsAssignableFrom(type))
+            yield break;
         const BindingFlags declared = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-        foreach (Type? type in types)
+        foreach (string name in UpdateMethods)
         {
-            if (type == null || type.ContainsGenericParameters || !typeof(MonoBehaviour).IsAssignableFrom(type))
-                continue;
-            foreach (string name in UpdateMethods)
-            {
-                if (type.GetMethod(name, declared, null, Type.EmptyTypes, null) is { IsAbstract: false } method)
-                    yield return method;
-            }
+            if (type.GetMethod(name, declared, null, Type.EmptyTypes, null) is { IsAbstract: false } method)
+                yield return method;
         }
     }
 
@@ -188,5 +193,34 @@ internal sealed class PerfHost : MonoBehaviour
     {
         if (__state >= 0)
             costs.Exit(pluginOf.TryGetValue(__originalMethod, out int plugin) ? plugin : -1, Stopwatch.GetTimestamp() - __state);
+    }
+}
+
+/// <summary>Reflection over a plugin's types that tolerates the ones the game's runtime cannot load.</summary>
+internal static class LoadableTypes
+{
+    /// <summary>The Update loops of each type, skipping (and counting) a type the runtime cannot load, as a mod's
+    /// compatibility class for another mod that is not installed: one such type must not stop measuring.</summary>
+    public static List<MethodInfo> Collect(IEnumerable<Type?> types, Func<Type, IEnumerable<MethodInfo>> updatesOf, out int skipped)
+    {
+        List<MethodInfo> methods = [];
+        skipped = 0;
+        foreach (Type? type in types)
+        {
+            if (type == null)
+            {
+                skipped++;
+                continue;
+            }
+            try
+            {
+                methods.AddRange(updatesOf(type));
+            }
+            catch (Exception ex) when (ex is TypeLoadException or MissingMemberException or FileNotFoundException or FileLoadException or BadImageFormatException)
+            {
+                skipped++;
+            }
+        }
+        return methods;
     }
 }

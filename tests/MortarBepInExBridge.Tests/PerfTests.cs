@@ -191,9 +191,43 @@ public class PerfTests
     {
         var perf = new PerfSwitch();
         perf.Start();
-        perf.Fail();
-        Assert.Equal(PerfReport.Unmeasured, perf.Reply(true));
+        perf.Fail("Could not load type \"X\"");
+        JsonElement r = JsonDocument.Parse(perf.Reply(true)).RootElement;
+        Assert.False(r.GetProperty("measured").GetBoolean());
+        Assert.Equal("Could not load type \"X\"", r.GetProperty("reason").GetString());
         Assert.False(perf.Active);
+    }
+
+    private sealed class Timed
+    {
+        private void Update()
+        {
+        }
+    }
+
+    private sealed class Unloadable
+    {
+        private void Update()
+        {
+        }
+    }
+
+    [Fact]
+    public void ATypeThatCannotLoadIsSkippedAndTheRestAreStillTimed()
+    {
+        // Mono throws this from a mod's compatibility class whose field type lives in a mod that is not installed.
+        static IEnumerable<MethodInfo> UpdatesOf(Type t)
+        {
+            if (t == typeof(Unloadable))
+                throw new TypeLoadException("Could not load type of field 'Dawn.Compatibility.SoundAPICompat+<>c:<>9'");
+            if (t.GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic) is { } update)
+                yield return update;
+        }
+
+        List<MethodInfo> timed = LoadableTypes.Collect([typeof(Unloadable), null, typeof(Timed), typeof(PerfTests)], UpdatesOf, out int skipped);
+
+        Assert.Equal([typeof(Timed).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic)!], timed);
+        Assert.Equal(2, skipped);
     }
 
     [Fact]

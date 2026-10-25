@@ -5,7 +5,7 @@ namespace MortarBepInExBridge.Perf;
 internal sealed class PerfSwitch
 {
     private volatile bool active;
-    private volatile bool failed;
+    private volatile string? failed;
     private volatile bool restart;
     private volatile string summary = PerfReport.Unmeasured;
 
@@ -25,7 +25,9 @@ internal sealed class PerfSwitch
     /// <summary>The <c>perf</c> reply; start turns measuring on, or restarts the window when it already is.</summary>
     public string Reply(bool start)
     {
-        if (start && !this.failed)
+        if (this.failed != null)
+            return "{\"measured\":false,\"reason\":" + Json.Quote(this.failed) + "}";
+        if (start)
             this.Start();
         if (!this.active)
             return PerfReport.Unmeasured;
@@ -41,10 +43,10 @@ internal sealed class PerfSwitch
         return true;
     }
 
-    /// <summary>A measuring failure turns it off for the rest of the launch.</summary>
-    public void Fail()
+    /// <summary>A measuring failure turns it off for the rest of the launch, and the reply says why.</summary>
+    public void Fail(string reason)
     {
-        this.failed = true;
+        this.failed = reason;
         this.active = false;
     }
 }
