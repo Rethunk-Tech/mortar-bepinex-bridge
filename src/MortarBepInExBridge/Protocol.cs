@@ -55,6 +55,9 @@ internal interface IGameView
 
     /// <summary>Runs a line in the game's own console; null when the game took it, else why it did not.</summary>
     string? Console(string line);
+
+    /// <summary>The host's values of the settings Mortar-ConfigSync shares, as a JSON array.</summary>
+    string ConfigSync();
 }
 
 /// <summary>The command protocol: Mortar sends <c>token\ncommand\n</c> and reads one reply line, <c>ok</c>, <c>ok {json}</c> or <c>error: message</c>.</summary>
@@ -76,7 +79,7 @@ internal static class Protocol
     /// <summary>
     /// Run one command line. Most commands are queries:
     /// <c>ping</c> answers <c>ok</c> (the same reply the SMAPI bridge gives a queued command); <c>status</c>, <c>plugins</c>,
-    /// <c>perf</c> and <c>perf start</c> answer <c>ok</c> and JSON; <c>console &lt;line&gt;</c> runs the line in the game's console and answers <c>ok</c>.
+    /// <c>perf</c>, <c>perf start</c> and <c>configsync</c> answer <c>ok</c> and JSON; <c>console &lt;line&gt;</c> runs the line in the game's console and answers <c>ok</c>.
     /// </summary>
     public static string Handle(string line, IGameView game)
     {
@@ -109,8 +112,18 @@ internal static class Protocol
                 return "ok " + game.Perf(start: false);
             case "perf start":
                 return "ok " + game.Perf(start: true);
+            case "configsync":
+                try
+                {
+                    return "ok " + game.ConfigSync();
+                }
+                // The game thread can add a shared setting mid-read; the next query reads it whole.
+                catch (InvalidOperationException ex)
+                {
+                    return "error: " + ex.Message;
+                }
             default:
-                return "error: unknown command " + Json.Quote(name) + "; try ping, status, plugins, perf, perf start or console <line>";
+                return "error: unknown command " + Json.Quote(name) + "; try ping, status, plugins, perf, perf start, configsync or console <line>";
         }
     }
 

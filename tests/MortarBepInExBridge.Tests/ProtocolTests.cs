@@ -15,6 +15,8 @@ public class ProtocolTests
 
         public string Perf(bool start) => start ? "{\"started\":1}" : "{\"frames\":2}";
 
+        public string ConfigSync() => "[]";
+
         public List<string> Ran { get; } = [];
 
         public string? Console(string line)
@@ -31,6 +33,7 @@ public class ProtocolTests
     [InlineData("plugins", "ok [{\"guid\":\"a.b\",\"name\":\"A \\\"quoted\\\"\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"name\":\"C\",\"version\":\"0.1.0\",\"location\":\"Pack-C/c.dll\"}]")]
     [InlineData("perf", "ok {\"frames\":2}")]
     [InlineData("PERF START", "ok {\"started\":1}")]
+    [InlineData("configsync", "ok []")]
     [InlineData("", "error: empty command")]
     public void Commands(string line, string reply) => Assert.Equal(reply, Protocol.Handle(line, new Game()));
 
@@ -63,6 +66,8 @@ public class ProtocolTests
         public string Perf(bool start) => "{}";
 
         public string? Console(string line) => null;
+
+        public string ConfigSync() => "[]";
     }
 
     [Fact]
@@ -70,7 +75,7 @@ public class ProtocolTests
     {
         string reply = Protocol.Handle("give money", new Game());
         Assert.StartsWith("error: unknown command \"give money\"", reply);
-        Assert.Contains("ping, status, plugins, perf, perf start or console <line>", reply);
+        Assert.Contains("ping, status, plugins, perf, perf start, configsync or console <line>", reply);
     }
 
     [Fact]

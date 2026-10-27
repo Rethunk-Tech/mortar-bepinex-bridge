@@ -40,6 +40,8 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     string IGameView.Perf(bool start) => PerfHost.Reply(start);
 
+    string IGameView.ConfigSync() => ConfigSyncValues.Read(IntroSkip.Find);
+
     private const int ConsoleWaitMs = 2000;
     private readonly MainThreadQueue Main = new();
     private IGameConsole? GameConsole;
