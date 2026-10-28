@@ -41,6 +41,17 @@ internal sealed class PerfHost : MonoBehaviour
     private PatchGraph? graph;
     private int collectionsAtStart;
     private float nextSummary;
+    private readonly Queue<MethodBase> pending = new();
+    private int wrapped;
+    private int failed;
+    private Harmony? harmony;
+    private HarmonyMethod? enter;
+    private HarmonyMethod? exit;
+    private long wrapTicks;
+    // Wrapping hundreds of methods in one frame froze loading under a large pack; each frame gets a slice and the whole
+    // job a ceiling, after which measuring carries on with what it has rather than hold the game back.
+    private const double SliceMs = 8;
+    private const double CeilingMs = 20_000;
 
     public static void Start(ManualLogSource log, bool measuredLaunch)
     {
@@ -81,6 +92,18 @@ internal sealed class PerfHost : MonoBehaviour
                 this.frames.Reset();
                 costs.Reset();
                 this.collectionsAtStart = GC.CollectionCount(0);
+            }
+            if (this.pending.Count > 0)
+            {
+                this.WrapSome();
+                // The window starts once everything is wrapped, so the wrapping frames do not skew it.
+                if (this.pending.Count == 0)
+                {
+                    this.frames.Reset();
+                    costs.Reset();
+                    this.collectionsAtStart = GC.CollectionCount(0);
+                }
+                return;
             }
             this.frames.Add(Time.unscaledDeltaTime * 1000);
             costs.EndFrame();
@@ -126,23 +149,40 @@ internal sealed class PerfHost : MonoBehaviour
         foreach ((MethodInfo method, string plugin) in timed)
             owners.TryAdd(method, index[plugin]);
         pluginOf = owners;
-        var harmony = new Harmony(HarmonyId);
-        var enter = new HarmonyMethod(typeof(PerfHost).GetMethod(nameof(Enter), BindingFlags.Static | BindingFlags.NonPublic));
-        var exit = new HarmonyMethod(typeof(PerfHost).GetMethod(nameof(Exit), BindingFlags.Static | BindingFlags.NonPublic));
-        int failed = 0;
+        this.harmony = new Harmony(HarmonyId);
+        this.enter = new HarmonyMethod(typeof(PerfHost).GetMethod(nameof(Enter), BindingFlags.Static | BindingFlags.NonPublic));
+        this.exit = new HarmonyMethod(typeof(PerfHost).GetMethod(nameof(Exit), BindingFlags.Static | BindingFlags.NonPublic));
         foreach (MethodBase method in owners.Keys)
+            this.pending.Enqueue(method);
+    }
+
+    private void WrapSome()
+    {
+        long start = Stopwatch.GetTimestamp();
+        while (this.pending.Count > 0 && Elapsed(start) < SliceMs)
         {
+            if (this.wrapTicks + (Stopwatch.GetTimestamp() - start) > CeilingMs * Stopwatch.Frequency / 1000)
+            {
+                this.log?.LogWarning($"Measuring stopped wrapping with {this.pending.Count} methods left: it ran past its time limit.");
+                this.pending.Clear();
+                break;
+            }
             try
             {
-                harmony.Patch(method, prefix: enter, finalizer: exit);
+                this.harmony!.Patch(this.pending.Dequeue(), prefix: this.enter, finalizer: this.exit);
+                this.wrapped++;
             }
             catch (Exception)
             {
-                failed++;
+                this.failed++;
             }
         }
-        this.log?.LogInfo($"Measuring {this.plugins.Count} plugins: {owners.Count - failed} methods timed, {failed} could not be wrapped.");
+        this.wrapTicks += Stopwatch.GetTimestamp() - start;
+        if (this.pending.Count == 0)
+            this.log?.LogInfo($"Measuring {this.plugins.Count} plugins: {this.wrapped} methods timed, {this.failed} could not be wrapped.");
     }
+
+    private static double Elapsed(long start) => (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
 
     private static IEnumerable<PatchEdge> Edges()
     {
