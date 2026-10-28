@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using BepInEx;
 using BepInEx.Bootstrap;
@@ -34,6 +35,7 @@ public static class StartupPatcher
     private static Listener? listener;
     private static DateTime processStart;
     private static string startupDir = "";
+    private static string readySignal = "";
 
     public static IEnumerable<string> TargetDLLs { get; } = [];
 
@@ -58,6 +60,7 @@ public static class StartupPatcher
                 return;
             }
             string title = TitleFromRequest(text!);
+            readySignal = ReadySignalFromRequest(text!);
             Environment.SetEnvironmentVariable(MeasuredEnvVar, "1");
             processStart = ProcessStart();
             timer = new StartupTimer(Now(), title);
@@ -86,6 +89,15 @@ public static class StartupPatcher
         return title.Length > MaxTitleChars ? title[..MaxTitleChars] : title;
     }
 
+    /// <summary>The game's ready signal Mortar asked for: the request's second line, "Namespace.Type.member", an event
+    /// or Action field the game raises when its own loading is done; empty when there is none.</summary>
+    internal static string ReadySignalFromRequest(string text)
+    {
+        string[] lines = text.Split('\n');
+        string signal = lines.Length > 1 ? lines[1].Trim() : "";
+        return signal.Length > MaxTitleChars ? signal[..MaxTitleChars] : signal;
+    }
+
     private static DateTime ProcessStart()
     {
         try
@@ -109,7 +121,10 @@ public static class StartupPatcher
             string message = e.Data?.ToString() ?? "";
             timer.OnLog(e.Source.SourceName, message, Now());
             if (e.Source.SourceName == StartupTimer.Source && message == StartupTimer.Started)
+            {
                 HookScenes();
+                HookReady();
+            }
         }
         catch (Exception ex)
         {
@@ -120,6 +135,42 @@ public static class StartupPatcher
     // Kept out of Initialize so UnityEngine is first touched once the chainloader runs, on Unity's main thread.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void HookScenes() => SceneManager.sceneLoaded += OnSceneLoaded;
+
+    // Reflection keeps game assemblies out of the bridge; a signal the game does not have leaves the title scene ending
+    // the measurement.
+    private static void HookReady()
+    {
+        if (readySignal == "")
+            return;
+        int dot = readySignal.LastIndexOf('.');
+        Type? type = dot <= 0 ? null : AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(readySignal[..dot], false)).FirstOrDefault(t => t != null);
+        string member = dot <= 0 ? "" : readySignal[(dot + 1)..];
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+        Action handler = OnReady;
+        if (type?.GetEvent(member, flags) is { } ev && ev.EventHandlerType == typeof(Action))
+            ev.AddEventHandler(null, handler);
+        else if (type?.GetField(member, flags) is { } field && field.FieldType == typeof(Action))
+            field.SetValue(null, Delegate.Combine((Delegate?)field.GetValue(null), handler));
+        else
+        {
+            Log.LogWarning($"Ready signal {readySignal} not found; the measurement ends at the title scene.");
+            return;
+        }
+        timer!.WaitForReady = true;
+    }
+
+    private static void OnReady()
+    {
+        try
+        {
+            if (timer != null && timer.OnReady(Now()))
+                WriteReport();
+        }
+        catch (Exception ex)
+        {
+            Abandon(ex);
+        }
+    }
 
     private static void OnSceneLoaded(Scene scene, LoadSceneMode _)
     {

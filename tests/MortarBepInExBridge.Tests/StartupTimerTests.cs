@@ -26,6 +26,26 @@ public class StartupTimerTests
     }
 
     [Fact]
+    public void AGameWithAReadySignalIsMeasuredUntilItFires()
+    {
+        var timer = new StartupTimer(1000, "title") { WaitForReady = true };
+        Assert.False(timer.OnScene("title", 9000));
+        Assert.True(timer.OnReady(12000));
+        JsonElement r = JsonDocument.Parse(timer.Report(DateTime.UtcNow, "5.4.21.0", "v1", _ => null)).RootElement;
+        Assert.Equal(9000, r.GetProperty("phases").GetProperty("titleScreen").GetInt64());
+        Assert.Equal(12000, r.GetProperty("phases").GetProperty("ready").GetInt64());
+        Assert.Equal(12000 - 1000, r.GetProperty("otherMs").GetInt64());
+    }
+
+    [Fact]
+    public void ASignalThatNeverFiresEndsAtTheNextSceneAfterTheTitle()
+    {
+        var timer = new StartupTimer(1000, "title") { WaitForReady = true };
+        Assert.False(timer.OnScene("title", 9000));
+        Assert.True(timer.OnScene("other", 9500));
+    }
+
+    [Fact]
     public void EachPluginIsChargedUntilTheChainloadersNextPluginLine()
     {
         JsonElement r = Run("MainMenu",

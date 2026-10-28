@@ -28,4 +28,11 @@ public class StartupPatcherTests
         Assert.Equal(new string('a', StartupPatcher.MaxTitleChars), StartupPatcher.TitleFromRequest(new string('a', StartupPatcher.MaxTitleChars + 8)));
         Assert.Equal("", StartupPatcher.TitleFromRequest("   "));
     }
+
+    [Fact]
+    public void ReadySignalFromRequestIsTheSecondLine()
+    {
+        Assert.Equal("RoR2.RoR2Application.onLoad", StartupPatcher.ReadySignalFromRequest("title\nRoR2.RoR2Application.onLoad\n"));
+        Assert.Equal("", StartupPatcher.ReadySignalFromRequest("MainMenu"));
+    }
 }

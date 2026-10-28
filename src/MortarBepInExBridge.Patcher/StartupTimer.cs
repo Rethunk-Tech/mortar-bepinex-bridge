@@ -38,6 +38,10 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
     private long chainloaderDone;
     private long firstScene;
     private long title;
+    private long ready;
+
+    /// <summary>Set once the game's ready signal is hooked: the report waits for it after the title scene.</summary>
+    public bool WaitForReady { get; set; }
 
     /// <summary>One line the chainloader logged at ms. Lines from any other source are some plugin's own.</summary>
     public void OnLog(string source, string message, long ms)
@@ -68,13 +72,23 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
     }
 
     /// <summary>A scene finished loading at ms; true once the title scene (or, for a game without one named, the first
-    /// scene) has, when the report is due.</summary>
+    /// scene) has, when the report is due. A game that names a ready signal waits for it, but a scene loaded after the
+    /// title ends the wait, so a signal that never comes costs the extra time and not the report.</summary>
     public bool OnScene(string name, long ms)
     {
         if (this.firstScene == 0)
             this.firstScene = ms;
+        bool moved = this.title > 0;
         if (titleScene == "" || name == titleScene)
             this.title = ms;
+        return this.title > 0 && (!this.WaitForReady || this.ready > 0 || moved);
+    }
+
+    /// <summary>The game's ready signal fired at ms; true when the title has already shown, so the report is due.</summary>
+    public bool OnReady(long ms)
+    {
+        if (this.ready == 0)
+            this.ready = ms;
         return this.title > 0;
     }
 
@@ -107,7 +121,8 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
             }
             mods.Append('}');
         }
-        long other = Math.Max(0, this.title - preloaderMs - charged);
+        long finish = Math.Max(this.title, this.ready);
+        long other = Math.Max(0, finish - preloaderMs - charged);
         return new StringBuilder("{\"schema\":1")
             .Append(",\"loader\":").Append(Json.Quote(loader))
             .Append(",\"game\":").Append(Json.Quote(game))
@@ -117,9 +132,10 @@ internal sealed class StartupTimer(long preloaderMs, string titleScene)
             .Append(",\"gameLaunched\":").Append(this.chainloaderDone)
             .Append(",\"titleMenu\":").Append(this.firstScene)
             .Append(",\"titleScreen\":").Append(this.title)
+            .Append(",\"ready\":").Append(this.ready)
             .Append("},\"entryTimed\":true,\"entryMissed\":").Append(this.loads.Count(l => l.End < 0))
             .Append(",\"mods\":[").Append(mods).Append("],\"otherMs\":").Append(other)
-            .Append(sampleMs == null ? "" : ",\"sampledOtherMs\":" + Math.Max(0, this.title - this.chainloaderDone - sampled))
+            .Append(sampleMs == null ? "" : ",\"sampledOtherMs\":" + Math.Max(0, finish - this.chainloaderDone - sampled))
             .Append('}')
             .ToString();
     }
