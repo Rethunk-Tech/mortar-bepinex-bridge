@@ -32,7 +32,7 @@ public class StartupPatcherTests
     [Fact]
     public void ReadySignalFromRequestIsTheSecondLine()
     {
-        Assert.Equal("RoR2.RoR2Application.onLoad", StartupPatcher.ReadySignalFromRequest("title\nRoR2.RoR2Application.onLoad\n"));
+        Assert.Equal("BaseMainMenuScreen: OnEnter()", StartupPatcher.ReadySignalFromRequest("title\nBaseMainMenuScreen: OnEnter()\n"));
         Assert.Equal("", StartupPatcher.ReadySignalFromRequest("MainMenu"));
     }
 }

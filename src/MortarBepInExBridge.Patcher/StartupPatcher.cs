@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using BepInEx;
 using BepInEx.Bootstrap;
@@ -89,8 +88,8 @@ public static class StartupPatcher
         return title.Length > MaxTitleChars ? title[..MaxTitleChars] : title;
     }
 
-    /// <summary>The game's ready signal Mortar asked for: the request's second line, "Namespace.Type.member", an event
-    /// or Action field the game raises when its own loading is done; empty when there is none.</summary>
+    /// <summary>The game's ready signal Mortar asked for: the request's second line, the text of the Unity log message
+    /// the game prints when its own loading is done; empty when there is none.</summary>
     internal static string ReadySignalFromRequest(string text)
     {
         string[] lines = text.Split('\n');
@@ -136,27 +135,21 @@ public static class StartupPatcher
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void HookScenes() => SceneManager.sceneLoaded += OnSceneLoaded;
 
-    // Reflection keeps game assemblies out of the bridge; a signal the game does not have leaves the title scene ending
-    // the measurement.
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void HookReady()
     {
-        if (readySignal == "")
-            return;
-        int dot = readySignal.LastIndexOf('.');
-        Type? type = dot <= 0 ? null : AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(readySignal[..dot], false)).FirstOrDefault(t => t != null);
-        string member = dot <= 0 ? "" : readySignal[(dot + 1)..];
-        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
-        Action handler = OnReady;
-        if (type?.GetEvent(member, flags) is { } ev && ev.EventHandlerType == typeof(Action))
-            ev.AddEventHandler(null, handler);
-        else if (type?.GetField(member, flags) is { } field && field.FieldType == typeof(Action))
-            field.SetValue(null, Delegate.Combine((Delegate?)field.GetValue(null), handler));
-        else
+        if (readySignal != "")
         {
-            Log.LogWarning($"Ready signal {readySignal} not found; the measurement ends at the title scene.");
-            return;
+            Application.logMessageReceived += OnUnityLog;
+            timer!.WaitForReady = true;
         }
-        timer!.WaitForReady = true;
+    }
+
+    // The non-threaded event runs on the main thread, where the report may be written.
+    private static void OnUnityLog(string message, string _, LogType __)
+    {
+        if (message.Trim() == readySignal)
+            OnReady();
     }
 
     private static void OnReady()
@@ -227,6 +220,7 @@ public static class StartupPatcher
             BepInEx.Logging.Logger.Listeners.Remove(listener);
         listener = null;
         SceneManager.sceneLoaded -= OnSceneLoaded;
+        Application.logMessageReceived -= OnUnityLog;
     }
 
     // A timing failure must never reach the game. The hooks stay but do nothing: one may be running from inside
