@@ -5,10 +5,12 @@
 # MortarBepInExBridge for the core build and MortarBepInExBridge_<Game> for a game build. It also writes
 # <name>-<version>-nexus.zip, the same dlls under BepInEx/plugins/ and BepInEx/patchers/, which unpacks into the game
 # folder as Nexus Mods and Vortex expect. The package description comes from packages/<Game or core>.txt.
-# DIST overrides the output folder (default dist/).
+# MortarBepInExBridge_IL2CPP is the BepInEx 6 IL2CPP plugin (src/MortarBepInExBridge.IL2CPP): no startup patcher, which is a
+# BepInEx 5 preloader, so its zips hold the plugin dll alone. DIST overrides the output folder (default dist/).
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 csproj="$root/src/MortarBepInExBridge/MortarBepInExBridge.csproj"
+il2cpp="$root/src/MortarBepInExBridge.IL2CPP/MortarBepInExBridge.IL2CPP.csproj"
 patcher="$root/src/MortarBepInExBridge.Patcher/MortarBepInExBridge.Patcher.csproj"
 version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$csproj")"
 [ -n "$version" ] || {
@@ -23,6 +25,7 @@ export TMPDIR="$scratch"
 dist="${DIST:-$root/dist}"
 mkdir -p "$dist"
 dotnet restore --locked-mode "$csproj"
+dotnet restore --locked-mode "$il2cpp"
 dotnet restore --locked-mode "$patcher"
 dotnet build "$patcher" -c Release --no-restore
 
@@ -67,3 +70,25 @@ package ""
 for dir in "$root"/src/MortarBepInExBridge/Games/*/; do
   package "$(basename "$dir")"
 done
+
+name="MortarBepInExBridge_IL2CPP"
+dotnet build "$il2cpp" -c Release --no-restore
+stage="$scratch/$name-stage"
+mkdir -p "$stage/plugins"
+cp "$root/src/MortarBepInExBridge.IL2CPP/bin/Release/net6.0/MortarBepInExBridge.IL2CPP.dll" "$stage/plugins/"
+cp "$root/assets/icon.png" "$root/README.md" "$stage/"
+description="$(head -n 1 "$root/packages/IL2CPP.txt")"
+sed -e "s/@NAME@/$name/" -e "s/@VERSION@/$version/" -e "s|@DESCRIPTION@|$description|" "$root/manifest.template.json" >"$stage/manifest.json"
+zip="$dist/$name-$version.zip"
+rm -f "$zip"
+(cd "$stage" && zip -q -X "$zip" manifest.json icon.png README.md plugins/MortarBepInExBridge.IL2CPP.dll)
+(cd "$dist" && sha256sum "$(basename "$zip")" >"$(basename "$zip").sha256")
+nexus="$scratch/$name-nexus"
+mkdir -p "$nexus/BepInEx/plugins/MortarBepInExBridge"
+cp "$stage/plugins/MortarBepInExBridge.IL2CPP.dll" "$nexus/BepInEx/plugins/MortarBepInExBridge/"
+nexus_zip="$dist/$name-$version-nexus.zip"
+rm -f "$nexus_zip"
+(cd "$nexus" && zip -q -X "$nexus_zip" BepInEx/plugins/MortarBepInExBridge/MortarBepInExBridge.IL2CPP.dll)
+(cd "$dist" && sha256sum "$(basename "$nexus_zip")" >"$(basename "$nexus_zip").sha256")
+echo "$zip"
+echo "$nexus_zip"

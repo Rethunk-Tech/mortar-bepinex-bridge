@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/MortarBepInExBridge/MortarBepInExBridge.csproj" />
+    <Project Path="src/MortarBepInExBridge.IL2CPP/MortarBepInExBridge.IL2CPP.csproj" />
     <Project Path="src/MortarBepInExBridge.Patcher/MortarBepInExBridge.Patcher.csproj" />
   </Folder>
   <Folder Name="/tests/">
