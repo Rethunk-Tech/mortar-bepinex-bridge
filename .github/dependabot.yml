@@ -1,8 +1,17 @@
 # Dependabot PRs are signal only: the equivalent bump is applied by hand on main and the PR
 # closed (fleet dependency policy). Grouped and weekly so the signal stays one PR per ecosystem.
 version: 2
+# BepInEx and Il2CppInterop packages come from BepInEx's own feed (nuget.config); Dependabot reaches only declared registries.
+registries:
+  bepinex:
+    type: nuget-feed
+    url: https://nuget.bepinex.dev/v3/index.json
+  nuget-org:
+    type: nuget-feed
+    url: https://api.nuget.org/v3/index.json
 updates:
   - package-ecosystem: nuget
+    registries: [bepinex, nuget-org]
     directory: /src/MortarBepInExBridge
     schedule:
       interval: weekly
@@ -15,6 +24,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: nuget
+    registries: [bepinex, nuget-org]
     directory: /src/MortarBepInExBridge.IL2CPP
     schedule:
       interval: weekly
@@ -27,6 +37,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: nuget
+    registries: [bepinex, nuget-org]
     directory: /src/MortarBepInExBridge.Patcher
     schedule:
       interval: weekly
@@ -39,6 +50,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: nuget
+    registries: [bepinex, nuget-org]
     directory: /tests/MortarBepInExBridge.Tests
     schedule:
       interval: weekly
