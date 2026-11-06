@@ -37,17 +37,20 @@ internal sealed class PerfSwitch
         return true;
     }
 
-    /// <summary>The <c>perf</c> reply; start turns measuring on, or restarts the window when it already is.</summary>
+    /// <summary>The <c>perf</c> reply; start turns measuring on, or restarts the window when it already is. Every reply
+    /// says <c>stoppable</c>, so a client can tell a companion that answers <c>perf stop</c> from an older one.</summary>
     public string Reply(bool start)
     {
         if (this.failed != null)
-            return "{\"measured\":false,\"reason\":" + Json.Quote(this.failed) + "}";
+            return Stoppable("{\"measured\":false,\"reason\":" + Json.Quote(this.failed) + "}");
         if (start)
             this.Start();
         if (!this.active)
-            return PerfReport.Unmeasured;
-        return start ? "{\"measured\":true}" : this.summary;
+            return Stoppable(PerfReport.Unmeasured);
+        return Stoppable(start ? "{\"measured\":true}" : this.summary);
     }
+
+    private static string Stoppable(string json) => "{\"stoppable\":true," + json[1..];
 
     /// <summary>True once per <see cref="Start"/>; only the main thread takes it.</summary>
     public bool TakeRestart()

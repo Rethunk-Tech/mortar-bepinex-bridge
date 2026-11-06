@@ -174,16 +174,16 @@ public class PerfTests
     public void PerfStartTurnsMeasuringOnForALaunchThatWasNotMeasured()
     {
         var perf = new PerfSwitch();
-        Assert.Equal(PerfReport.Unmeasured, perf.Reply(false));
+        Assert.Equal("{\"stoppable\":true,\"measured\":false}", perf.Reply(false));
         Assert.False(perf.Active);
         Assert.False(perf.TakeRestart());
 
-        Assert.Equal("{\"measured\":true}", perf.Reply(true));
+        Assert.Equal("{\"stoppable\":true,\"measured\":true}", perf.Reply(true));
         Assert.True(perf.Active);
         Assert.True(perf.TakeRestart());
         Assert.False(perf.TakeRestart());
         perf.Summary = "{\"measured\":true,\"frames\":1}";
-        Assert.Equal("{\"measured\":true,\"frames\":1}", perf.Reply(false));
+        Assert.Equal("{\"stoppable\":true,\"measured\":true,\"frames\":1}", perf.Reply(false));
     }
 
     [Fact]
@@ -199,9 +199,9 @@ public class PerfTests
         perf.Summary = "{\"measured\":true,\"frames\":7}";
         Assert.True(perf.Stop());
         Assert.True(perf.Stopped);
-        Assert.Equal("{\"measured\":true,\"frames\":7}", perf.Reply(false));
+        Assert.Equal("{\"stoppable\":true,\"measured\":true,\"frames\":7}", perf.Reply(false));
 
-        Assert.Equal("{\"measured\":true}", perf.Reply(true));
+        Assert.Equal("{\"stoppable\":true,\"measured\":true}", perf.Reply(true));
         Assert.False(perf.Stopped);
         Assert.True(perf.TakeRestart());
     }
@@ -214,6 +214,7 @@ public class PerfTests
         perf.Fail("Could not load type \"X\"");
         JsonElement r = JsonDocument.Parse(perf.Reply(true)).RootElement;
         Assert.False(r.GetProperty("measured").GetBoolean());
+        Assert.True(r.GetProperty("stoppable").GetBoolean());
         Assert.Equal("Could not load type \"X\"", r.GetProperty("reason").GetString());
         Assert.False(perf.Active);
     }
