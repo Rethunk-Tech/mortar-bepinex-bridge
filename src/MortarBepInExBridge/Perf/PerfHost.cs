@@ -79,6 +79,8 @@ internal sealed class PerfHost : MonoBehaviour
 
     public static string Reply(bool start) => perf.Reply(start);
 
+    public static bool Stop() => perf.Stop();
+
     private void Update()
     {
         try
@@ -105,6 +107,8 @@ internal sealed class PerfHost : MonoBehaviour
                 }
                 return;
             }
+            if (perf.Stopped)
+                return;
             this.frames.Add(Time.unscaledDeltaTime * 1000);
             costs.EndFrame();
             if (Time.unscaledTime >= this.nextSummary)

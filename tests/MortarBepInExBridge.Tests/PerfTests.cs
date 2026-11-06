@@ -187,6 +187,26 @@ public class PerfTests
     }
 
     [Fact]
+    public void PerfStopFreezesAMeasurementAndAStartResumesIt()
+    {
+        var perf = new PerfSwitch();
+        Assert.False(perf.Stop());
+        Assert.False(perf.Stopped);
+        Assert.False(perf.Active);
+
+        perf.Start();
+        perf.TakeRestart();
+        perf.Summary = "{\"measured\":true,\"frames\":7}";
+        Assert.True(perf.Stop());
+        Assert.True(perf.Stopped);
+        Assert.Equal("{\"measured\":true,\"frames\":7}", perf.Reply(false));
+
+        Assert.Equal("{\"measured\":true}", perf.Reply(true));
+        Assert.False(perf.Stopped);
+        Assert.True(perf.TakeRestart());
+    }
+
+    [Fact]
     public void AFailedMeasureStaysOffThroughALaterStart()
     {
         var perf = new PerfSwitch();

@@ -53,6 +53,9 @@ internal interface IGameView
     /// <summary>The in-game performance summary as JSON; start restarts its window first.</summary>
     string Perf(bool start);
 
+    /// <summary>Freezes the performance window; false when measuring never started.</summary>
+    bool PerfStop();
+
     /// <summary>Runs a line in the game's own console; null when the game took it, else why it did not.</summary>
     string? Console(string line);
 
@@ -79,7 +82,7 @@ internal static class Protocol
     /// <summary>
     /// Run one command line. Most commands are queries:
     /// <c>ping</c> answers <c>ok</c> (the same reply the SMAPI bridge gives a queued command); <c>status</c>, <c>plugins</c>,
-    /// <c>perf</c>, <c>perf start</c> and <c>configsync</c> answer <c>ok</c> and JSON; <c>console &lt;line&gt;</c> runs the line in the game's console and answers <c>ok</c>.
+    /// <c>perf</c>, <c>perf start</c>, <c>perf stop</c> and <c>configsync</c> answer <c>ok</c> and JSON; <c>console &lt;line&gt;</c> runs the line in the game's console and answers <c>ok</c>.
     /// </summary>
     public static string Handle(string line, IGameView game)
     {
@@ -112,6 +115,8 @@ internal static class Protocol
                 return "ok " + game.Perf(start: false);
             case "perf start":
                 return "ok " + game.Perf(start: true);
+            case "perf stop":
+                return "ok {\"measured\":" + (game.PerfStop() ? "true" : "false") + "}";
             case "configsync":
                 try
                 {
@@ -123,7 +128,7 @@ internal static class Protocol
                     return "error: " + ex.Message;
                 }
             default:
-                return "error: unknown command " + Json.Quote(name) + "; try ping, status, plugins, perf, perf start, configsync or console <line>";
+                return "error: unknown command " + Json.Quote(name) + "; try ping, status, plugins, perf, perf start, perf stop, configsync or console <line>";
         }
     }
 

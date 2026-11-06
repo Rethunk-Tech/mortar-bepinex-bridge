@@ -7,9 +7,13 @@ internal sealed class PerfSwitch
     private volatile bool active;
     private volatile string? failed;
     private volatile bool restart;
+    private volatile bool stopped;
     private volatile string summary = PerfReport.Unmeasured;
 
     public bool Active => this.active;
+
+    /// <summary>True between <see cref="Stop"/> and the next <see cref="Start"/>: the main thread then adds no frames.</summary>
+    public bool Stopped => this.stopped;
 
     public string Summary
     {
@@ -18,8 +22,19 @@ internal sealed class PerfSwitch
 
     public void Start()
     {
+        this.stopped = false;
         this.active = true;
         this.restart = true;
+    }
+
+    /// <summary>Freezes the window and its last summary; false when measuring never started. Harmony stays patched, since
+    /// unpatching while a patched method runs is unsafe.</summary>
+    public bool Stop()
+    {
+        if (!this.active)
+            return false;
+        this.stopped = true;
+        return true;
     }
 
     /// <summary>The <c>perf</c> reply; start turns measuring on, or restarts the window when it already is.</summary>

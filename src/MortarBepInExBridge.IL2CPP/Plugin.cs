@@ -28,6 +28,8 @@ public sealed class Plugin : BasePlugin, IGameView
 
     string IGameView.Perf(bool start) => "{}";
 
+    bool IGameView.PerfStop() => false;
+
     string? IGameView.Console(string line) => "this game has no console Mortar can reach";
 
     string IGameView.ConfigSync() => "[]";
