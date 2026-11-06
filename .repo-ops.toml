@@ -9,6 +9,11 @@ max_version = "0.10.4"
 reason = "the BepInExPack ships Mono.Cecil 0.10.4 and the patcher's Patch signature binds to it"
 
 [[hold]]
-package = "BepInEx.*"
+package = "BepInEx.Core"
 max_version = "5"
-reason = "the bridge is a BepInEx 5 plugin and patcher; BepInEx 6 is a different loader"
+reason = "the plugin targets the BepInEx 5 loader; BepInEx 6 is a different loader (the IL2CPP project is BepInEx 6 and stays unheld)"
+
+[[hold]]
+package = "BepInEx.BaseLib"
+max_version = "5"
+reason = "the patcher targets the BepInEx 5 preloader; BepInEx 6 is a different loader"
