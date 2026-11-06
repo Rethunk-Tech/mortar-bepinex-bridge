@@ -104,6 +104,8 @@ disclaimer the player must see.
 
 ## Game version sources cover only Lethal Company
 
+Blocked: needs Valheim's `assembly_valheim.dll` or confirmed in-game field names, and no maintainer owns Valheim (NOMAD, 2026-11-05). Pick up only when a Valheim install or a contributor with one is available.
+
 `GameVersion.Sources` (`GameVersion.cs:33`) has one row:
 `GameNetworkManager.gameVersionNum` formatted `v{0}`. Valheim already has an
 overlay provider, but `status` reports Unity's `Application.version` there
