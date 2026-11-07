@@ -28,4 +28,29 @@ public class CodeBaseFixTests
     {
         Assert.Null(CodeBaseFix.FromLocation(location, escaped: false));
     }
+
+    [Fact]
+    public void AMemoryLoadedAssemblyUsesItsFileInTheManagedFolder()
+    {
+        var (handled, codeBase) = CodeBaseFix.Rebuild("", "UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null", "/g/Mörtar/Game_Data/Managed", f => f == "/g/Mörtar/Game_Data/Managed/UnityEngine.CoreModule.dll", escaped: false);
+        Assert.True(handled);
+        Assert.Equal("file:///g/Mörtar/Game_Data/Managed/UnityEngine.CoreModule.dll", codeBase);
+    }
+
+    [Theory]
+    [InlineData("UnityEngine.CoreModule, Version=0.0.0.0", "/g/Managed")]
+    [InlineData("../evil, Version=1.0.0.0", "/g/Managed")]
+    [InlineData("Missing", null)]
+    public void AMemoryLoadedAssemblyWithNoFileGetsANullCodeBase(string fullName, string? managedDir)
+    {
+        var (handled, codeBase) = CodeBaseFix.Rebuild(null, fullName, managedDir, _ => false, escaped: true);
+        Assert.True(handled);
+        Assert.Null(codeBase);
+    }
+
+    [Fact]
+    public void AnUnusableLocationIsNotHandled()
+    {
+        Assert.False(CodeBaseFix.Rebuild("relative/a.dll", "A", "/g/Managed", _ => true, escaped: false).Handled);
+    }
 }
