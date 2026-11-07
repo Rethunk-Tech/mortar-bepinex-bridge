@@ -46,6 +46,8 @@ public static class StartupPatcher
     {
         try
         {
+            if (!CodeBaseFix.Install())
+                Log.LogWarning("Assembly names of game assemblies may fail under a non-ASCII game folder: this Harmony is not the one the bridge binds to.");
             // BepInEx's root is the profile's BepInEx folder; the profile folder above it holds Mortar's startup folder.
             startupDir = Path.Combine(Path.GetDirectoryName(Paths.BepInExRootPath) ?? "", "startup");
             string request = Path.Combine(startupDir, MeasureFile);
