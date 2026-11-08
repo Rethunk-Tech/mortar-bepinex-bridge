@@ -97,6 +97,10 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
             this.SceneValue = next.name;
             this.ReadGameVersion();
         };
+        // Unity's own null check: a destroyed plugin is not a null reference. The regress reads this line to learn
+        // whether the loader kept the plugin alive across scene loads.
+        SceneManager.sceneLoaded += (scene, _) =>
+            this.Logger.LogInfo($"Bridge plugin alive after scene {scene.name}: {this != null}");
         // Only a real quit stops the server: in Lethal Company, with BepInEx's default HideManagerGameObject=false, the
         // first scene load destroys the manager object and this component with it, while the game runs on.
         Application.quitting += this.Shutdown;
@@ -105,7 +109,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         if (intro != IntroMode.Play)
         {
             this.Logger.LogInfo($"Mortar asked this launch to skip the intro ({intro}).");
-            IntroRunner.Start(this, this.Logger, intro, Hooks?.IntroSteps ?? []);
+            IntroRunner.Start(this.Logger, intro, Hooks?.IntroSteps ?? []);
         }
 
         byte[] raw = new byte[32];
