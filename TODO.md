@@ -7,18 +7,18 @@ Sections are unordered.
 
 ## Overlay providers cover only Lethal Company and Valheim
 
-`OverlayProviders.For` (`IOverlayProvider.cs:22`) switches on
-`Application.productName` for `"Lethal Company"` and `"Valheim"`. Any other
-BepInEx 5 game that Mortar launches with stream overlay on hits
-`Plugin.StartOverlay` (`Plugin.cs:123`): it logs a warning and leaves the
-HTTP server off. The command channel still works. README's overlay key table
-(`README.md:77`) lists only those two games.
+`IGameHooks.Overlay` (`GameHooks.cs:13`) is what a game build implements.
+Lethal Company and Valheim each return a provider; the core build's
+`BuiltGame.Hooks` is null. Any other BepInEx 5 game that Mortar launches with
+stream overlay on hits `Plugin.StartOverlay` (`Plugin.cs:165`): it logs a
+warning and leaves the HTTP server off. The command channel still works.
+README's overlay key table (`README.md:86`) lists only those two games.
 
 Decided shape: one `IOverlayProvider` per Mortar game id that has an OBS
-layout, named types as strings, `Probe` for reads, registered in the same
-switch. Keys match the page layout; a renamed field is omitted, never zero.
-`UnknownGameHasNoProvider` (`OverlayTests.cs:143`) keeps Stardew (SMAPI, not
-BepInEx) as null.
+layout, named types as strings, `Probe` for reads, registered through that
+game's `IGameHooks.Overlay`. Keys match the page layout; a renamed field is
+omitted, never zero. `TheCoreBuildHasNoGameHooks` (`CoreBuildTests.cs:11`)
+keeps the core build (no `-p:Game`) as null.
 
 Rejected: a generic "dump public fields" provider. The page needs named keys.
 Rejected: shipping game assemblies.
@@ -28,13 +28,15 @@ reflection names) larger than a gap-fill and easy to get wrong.
 
 ### Read
 
-1. `src/MortarBepInExBridge/Overlay/IOverlayProvider.cs:22` `For` — the
-   switch a new game extends.
-2. `src/MortarBepInExBridge/Overlay/LethalCompanyProvider.cs` and
-   `ValheimProvider.cs` — the pattern: `Read` returns null out of session.
+1. `src/MortarBepInExBridge/GameHooks.cs:13` `IGameHooks.Overlay` — the
+   method a new game implements.
+2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyProvider.cs` and
+   `Games/Valheim/ValheimProvider.cs` — the pattern: `Read` returns null out
+   of session.
 3. `src/MortarBepInExBridge/Overlay/Probe.cs` — member/method reads by name.
-4. `src/MortarBepInExBridge/Plugin.cs:123` — warning when `For` is null.
-5. `README.md:77` — the key table that ships with a new provider.
+4. `src/MortarBepInExBridge/Plugin.cs:178` — warning when the provider is
+   null.
+5. `README.md:86` — the key table that ships with a new provider.
 
 ### Traps
 
@@ -46,8 +48,8 @@ reflection names) larger than a gap-fill and easy to get wrong.
 
 ### Acceptance
 
-- `For` on the new productName returns a provider; `For("Stardew Valley")`
-  stays null.
+- A game build's `Hooks.Overlay` returns a provider; the core build's
+  `Hooks` stays null.
 - In session, `/state` JSON has `inGame` true, `game` set to Mortar's id, and
   the documented keys; missing fields are absent, not zero.
 - Out of session, snapshot is `{"inGame":false}`.
@@ -56,7 +58,7 @@ reflection names) larger than a gap-fill and easy to get wrong.
 
 ## Intro skip steps exist only for Lethal Company
 
-`IntroSkip.Steps` (`IntroSkip.cs:57`) names Lethal Company's init scenes.
+`LethalCompanyHooks.Steps` (`LethalCompanyHooks.cs:15`) names Lethal Company's init scenes.
 `IntroSkip.For` still runs in every game, and `SplashStop` still asks Unity to
 end its own splash (any engine that has that API). Valheim and other titles
 keep their own boot UI: Mortar's `startup/skip-intro` and `MORTAR_SKIP_INTRO=1`
@@ -76,11 +78,12 @@ disclaimer the player must see.
 
 1. `src/MortarBepInExBridge/IntroSkip.cs:10` `IntroMode` — Play / Animations /
    Menu.
-2. `src/MortarBepInExBridge/IntroSkip.cs:57` `Steps` — Lethal Company only.
-3. `src/MortarBepInExBridge/IntroSkip.cs:77` `For` — scene + mode filter.
-4. `src/MortarBepInExBridge/IntroRunner.cs:69` `OnSceneLoaded` — applies
+2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyHooks.cs:15`
+   `Steps` — Lethal Company only.
+3. `src/MortarBepInExBridge/IntroSkip.cs:64` `For` — scene + mode filter.
+4. `src/MortarBepInExBridge/IntroRunner.cs:72` `OnSceneLoaded` — applies
    steps.
-5. `README.md:28` — documents Lethal Company Online/LAN; other games would
+5. `README.md:32` — documents Lethal Company Online/LAN; other games would
    be named here.
 
 ### Traps
@@ -106,11 +109,11 @@ disclaimer the player must see.
 
 Blocked: needs Valheim's `assembly_valheim.dll` or confirmed in-game field names, and no maintainer owns Valheim (NOMAD, 2026-11-05). Pick up only when a Valheim install or a contributor with one is available.
 
-`GameVersion.Sources` (`GameVersion.cs:33`) has one row:
+`LethalCompanyHooks.Versions` (`LethalCompanyHooks.cs:23`) has one row:
 `GameNetworkManager.gameVersionNum` formatted `v{0}`. Valheim already has an
 overlay provider, but `status` reports Unity's `Application.version` there
 (`gameVersionSource` `unity`) even when the pause menu shows a different
-number. `Plugin.ReadGameVersion` (`Plugin.cs:89`) already re-reads on scene
+number. `Plugin.ReadGameVersion` (`Plugin.cs:141`) already re-reads on scene
 change.
 
 Decided shape: another `GameVersionSource` (type, static instance, field,
@@ -126,16 +129,16 @@ be confirmed in-game; a wrong field is worse than `unity`.
 
 ### Read
 
-1. `src/MortarBepInExBridge/GameVersion.cs:11` `GameVersionSource` — the
+1. `src/MortarBepInExBridge/GameVersion.cs:12` `GameVersionSource` — the
    five strings a new row fills.
-2. `src/MortarBepInExBridge/GameVersion.cs:33` `Sources` — Lethal Company
-   only.
-3. `src/MortarBepInExBridge/GameVersion.cs:43` `Hook` — patches start-up.
-4. `src/MortarBepInExBridge/GameVersion.cs:75` `Read` — hooked value, else
+2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyHooks.cs:23`
+   `Versions` — Lethal Company only.
+3. `src/MortarBepInExBridge/GameVersion.cs:39` `Hook` — patches start-up.
+4. `src/MortarBepInExBridge/GameVersion.cs:71` `Read` — hooked value, else
    live field, else null.
 5. `tests/MortarBepInExBridge.Tests/GameVersionTests.cs` — fixtures for a
    new source.
-6. `README.md:56` — `gameVersionSource` `game` vs `unity`.
+6. `README.md:61` — `gameVersionSource` `game` vs `unity`.
 
 ### Traps
 
