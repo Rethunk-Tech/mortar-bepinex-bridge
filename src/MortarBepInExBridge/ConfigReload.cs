@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace MortarBepInExBridge;
 
@@ -39,17 +40,15 @@ internal static class ConfigReload
 
     /// <summary>Whether a loaded ConfigFile's path is the named file below configDir; names are case-insensitive.</summary>
     public static bool Owns(string configDir, string name, string filePath) =>
-        string.Equals(Path.GetFullPath(filePath), Path.GetFullPath(Path.Combine(configDir, name)), StringComparison.OrdinalIgnoreCase);
+        string.Equals(Path.GetFullPath(filePath), Path.GetFullPath(Path.Join(configDir, name)), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Reloads every target that owns the file; a throwing reload is reported and the rest still run.</summary>
     public static ConfigReloadResult Run(string configDir, string name, IEnumerable<ConfigTarget> targets)
     {
         int reloaded = 0;
         var failures = new List<string>();
-        foreach (ConfigTarget target in targets)
+        foreach (ConfigTarget target in targets.Where(target => Owns(configDir, name, target.Path)))
         {
-            if (!Owns(configDir, name, target.Path))
-                continue;
             try
             {
                 target.Reload();

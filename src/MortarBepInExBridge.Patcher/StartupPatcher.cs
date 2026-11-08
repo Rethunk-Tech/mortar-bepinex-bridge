@@ -49,8 +49,8 @@ public static class StartupPatcher
             if (!CodeBaseFix.Install())
                 Log.LogWarning("Assembly names of game assemblies may fail under a non-ASCII game folder: this Harmony is not the one the bridge binds to.");
             // BepInEx's root is the profile's BepInEx folder; the profile folder above it holds Mortar's startup folder.
-            startupDir = Path.Combine(Path.GetDirectoryName(Paths.BepInExRootPath) ?? "", "startup");
-            string request = Path.Combine(startupDir, MeasureFile);
+            startupDir = Path.Join(Path.GetDirectoryName(Paths.BepInExRootPath) ?? "", "startup");
+            string request = Path.Join(startupDir, MeasureFile);
             string? text = Files.ReadText(request, out string? error);
             if (text == null && error == null)
                 return;
@@ -191,11 +191,8 @@ public static class StartupPatcher
             .ToDictionary(g => g.Key, g => new PluginId(g.First().Metadata.GUID, g.First().Metadata.Name, g.First().Metadata.Version.ToString()));
         string loader = typeof(Chainloader).Assembly.GetName().Version?.ToString() ?? "";
         Dictionary<string, string> byAssembly = [];
-        foreach (PluginInfo info in Chainloader.PluginInfos.Values)
-        {
-            if ((object?)info.Instance is { } instance)
-                byAssembly.TryAdd(instance.GetType().Assembly.GetName().Name, info.Metadata.GUID);
-        }
+        foreach (PluginInfo info in Chainloader.PluginInfos.Values.Where(info => (object?)info.Instance is not null))
+            byAssembly.TryAdd(info.Instance!.GetType().Assembly.GetName().Name, info.Metadata.GUID);
         Dictionary<string, long> patches = ByPlugin(PatchTiming.Ms(), byAssembly);
         var shares = AppDomain.CurrentDomain.GetData(SharesKey) as Func<Dictionary<string, long>>;
         string report = done.Report(processStart, loader, Application.version, text => plugins.TryGetValue(text, out PluginId id) ? id : null, patches, shares?.Invoke());
@@ -205,13 +202,10 @@ public static class StartupPatcher
 
     internal static Dictionary<string, long> ByPlugin(Dictionary<string, long> byAssembly, Dictionary<string, string> guidOf)
     {
-        var sums = new Dictionary<string, long>();
-        foreach (KeyValuePair<string, long> p in byAssembly)
-        {
-            if (guidOf.TryGetValue(p.Key, out string? guid))
-                sums[guid] = sums.TryGetValue(guid, out long n) ? n + p.Value : p.Value;
-        }
-        return sums;
+        return byAssembly
+            .Where(p => guidOf.ContainsKey(p.Key))
+            .GroupBy(p => guidOf[p.Key])
+            .ToDictionary(g => g.Key, g => g.Sum(p => p.Value));
     }
 
     // Called from a scene load, never from inside a log event, while BepInEx is walking its listeners.

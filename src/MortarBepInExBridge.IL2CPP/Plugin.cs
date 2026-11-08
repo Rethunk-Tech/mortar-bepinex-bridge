@@ -44,7 +44,7 @@ public sealed class Plugin : BasePlugin, IGameView
         string token = BitConverter.ToString(raw).Replace("-", "").ToLowerInvariant();
 
         this.Server = new BridgeServer(token, line => Protocol.Handle(line, this));
-        this.StatePath = System.IO.Path.Combine(Paths.ConfigPath, StateFileName);
+        this.StatePath = System.IO.Path.Join(Paths.ConfigPath, StateFileName);
         this.Server.Start();
         try
         {

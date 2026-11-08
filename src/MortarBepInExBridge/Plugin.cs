@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -26,6 +27,9 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private BridgeServer? Server;
     private OverlayServer? Overlay;
+    // Its patches hold the game's own version as it was before mods changed it, so it is held for the whole process
+    // rather than made and released around one hook call.
+    private readonly Harmony VersionPatches = new(Guid + ".version");
     private string? StatePath;
     private volatile string GameVersionValue = "";
     private volatile bool GameVersionIsGames;
@@ -73,12 +77,11 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     // A ConfigFile shared by several plugins appears once.
     private static List<ConfigTarget> LoadedConfigs()
     {
-        var files = new List<ConfigFile>();
-        foreach (PluginInfo info in Chainloader.PluginInfos.Values)
-        {
-            if (info.Instance is BaseUnityPlugin { Config: { } config } && !files.Contains(config))
-                files.Add(config);
-        }
+        var files = Chainloader.PluginInfos.Values
+            .Select(info => (info.Instance as BaseUnityPlugin)?.Config)
+            .OfType<ConfigFile>()
+            .Distinct()
+            .ToList();
         // CoreConfig (BepInEx.cfg) is not public in the BepInEx.Core package this builds against.
         const BindingFlags any = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
         if (typeof(ConfigFile).GetProperty("CoreConfig", any)?.GetValue(null) is ConfigFile core && !files.Contains(core))
@@ -89,7 +92,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     private void Awake()
     {
         LogSources.Install(ReadProfileFile(HiddenLogSourcesFile));
-        GameVersion.Hook(new Harmony(Guid + ".version"), Probe.Find, Hooks?.VersionSources ?? []);
+        GameVersion.Hook(this.VersionPatches, Probe.Find, Hooks?.VersionSources ?? []);
         this.ReadGameVersion();
         this.SceneValue = SceneManager.GetActiveScene().name;
         SceneManager.activeSceneChanged += (_, next) =>
@@ -126,7 +129,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
             return Protocol.Handle(line, this);
         });
         // The config folder is the same for every way of launching the game, unlike the plugin's own folder, which a mod manager picks.
-        this.StatePath = System.IO.Path.Combine(Paths.ConfigPath, StateFileName);
+        this.StatePath = System.IO.Path.Join(Paths.ConfigPath, StateFileName);
         this.Server.Start();
         try
         {
@@ -199,7 +202,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     // A request Mortar leaves in the profile folder that holds BepInEx's, which a Steam launch reaches where the environment does not.
     private string? ReadProfileFile(string relative)
     {
-        string path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Paths.BepInExRootPath) ?? "", relative);
+        string path = System.IO.Path.Join(System.IO.Path.GetDirectoryName(Paths.BepInExRootPath) ?? "", relative);
         string? text = Files.ReadText(path, out string? error);
         if (error != null)
             this.Logger.LogWarning($"Could not read {relative}: {error}");

@@ -9,10 +9,10 @@ public class VersionTests
     public void PluginVersionEqualsTheCsprojVersion()
     {
         string? dir = AppContext.BaseDirectory;
-        while (dir != null && !File.Exists(Path.Combine(dir, "MortarBepInExBridge.slnx")))
+        while (dir != null && !File.Exists(Path.Join(dir, "MortarBepInExBridge.slnx")))
             dir = Path.GetDirectoryName(dir);
         Assert.NotNull(dir);
-        var csproj = XDocument.Load(Path.Combine(dir, "src", "MortarBepInExBridge", "MortarBepInExBridge.csproj"));
+        var csproj = XDocument.Load(Path.Join(dir, "src", "MortarBepInExBridge", "MortarBepInExBridge.csproj"));
         Assert.Equal(Plugin.Version, csproj.Descendants("Version").Single().Value);
     }
 }

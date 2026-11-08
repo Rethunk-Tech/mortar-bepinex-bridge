@@ -42,11 +42,11 @@ public class IntroSkipTests
     public void PluginLogsAliveAfterEachSceneForBisect()
     {
         DirectoryInfo? dir = new(AppContext.BaseDirectory);
-        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "MortarBepInExBridge.slnx")))
+        while (dir != null && !File.Exists(Path.Join(dir.FullName, "MortarBepInExBridge.slnx")))
             dir = dir.Parent;
         Assert.NotNull(dir);
-        string plugin = File.ReadAllText(Path.Combine(dir.FullName, "src/MortarBepInExBridge/Plugin.cs"));
-        string intro = File.ReadAllText(Path.Combine(dir.FullName, "src/MortarBepInExBridge/IntroRunner.cs"));
+        string plugin = File.ReadAllText(Path.Join(dir.FullName, "src/MortarBepInExBridge/Plugin.cs"));
+        string intro = File.ReadAllText(Path.Join(dir.FullName, "src/MortarBepInExBridge/IntroRunner.cs"));
         Assert.Contains("Bridge plugin alive after scene {scene.name}", plugin);
         Assert.DoesNotContain("Bridge plugin alive after scene {scene.name}", intro);
     }

@@ -7,7 +7,7 @@ public class FilesTests
     [Fact]
     public void ReadTextReturnsNullWhenTheFileIsMissing()
     {
-        string path = Path.Combine(Path.GetTempPath(), "mortar-missing-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Join(Path.GetTempPath(), "mortar-missing-" + Guid.NewGuid().ToString("N"));
         Assert.Null(Files.ReadText(path, out string? error));
         Assert.Null(error);
     }
@@ -17,9 +17,9 @@ public class FilesTests
     {
         if (OperatingSystem.IsWindows())
             return;
-        string dir = Path.Combine(Path.GetTempPath(), "mortar-files-" + Guid.NewGuid().ToString("N"));
+        string dir = Path.Join(Path.GetTempPath(), "mortar-files-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
-        string path = Path.Combine(dir, "unreadable");
+        string path = Path.Join(dir, "unreadable");
         File.WriteAllText(path, "x");
         File.SetUnixFileMode(path, (UnixFileMode)0);
         try
@@ -37,9 +37,9 @@ public class FilesTests
     [Fact]
     public void ReadTextRejectsAFileLargerThanTheCap()
     {
-        string dir = Path.Combine(Path.GetTempPath(), "mortar-files-" + Guid.NewGuid().ToString("N"));
+        string dir = Path.Join(Path.GetTempPath(), "mortar-files-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
-        string path = Path.Combine(dir, "huge");
+        string path = Path.Join(dir, "huge");
         try
         {
             File.WriteAllBytes(path, new byte[Files.MaxTextBytes + 1]);
@@ -58,9 +58,9 @@ public class FilesTests
     [Fact]
     public void AtomicWriteRemovesTheTempFileWhenReplaceFails()
     {
-        string dir = Path.Combine(Path.GetTempPath(), "mortar-atomic-" + Guid.NewGuid().ToString("N"));
+        string dir = Path.Join(Path.GetTempPath(), "mortar-atomic-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
-        string path = Path.Combine(dir, "target");
+        string path = Path.Join(dir, "target");
         Directory.CreateDirectory(path);
         try
         {
@@ -76,7 +76,7 @@ public class FilesTests
     [Fact]
     public void TryDeleteTreatsAMissingPathAsSuccess()
     {
-        string path = Path.Combine(Path.GetTempPath(), "mortar-gone-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Join(Path.GetTempPath(), "mortar-gone-" + Guid.NewGuid().ToString("N"));
         Assert.Null(Files.TryDelete(path));
     }
 
@@ -85,9 +85,9 @@ public class FilesTests
     {
         if (OperatingSystem.IsWindows())
             return;
-        string dir = Path.Combine(Path.GetTempPath(), "mortar-files-" + Guid.NewGuid().ToString("N"));
+        string dir = Path.Join(Path.GetTempPath(), "mortar-files-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
-        string path = Path.Combine(dir, "state");
+        string path = Path.Join(dir, "state");
         File.WriteAllText(path, "x");
         File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
         try
