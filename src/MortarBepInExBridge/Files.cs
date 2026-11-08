@@ -51,13 +51,8 @@ internal static class Files
         }
         catch
         {
-            try
-            {
-                File.Delete(temp);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-            }
+            // Best effort: a temp file that cannot be removed must not hide the write's own failure.
+            TryDelete(temp);
             throw;
         }
     }
