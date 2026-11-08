@@ -35,7 +35,7 @@ internal sealed class IntroRunner : MonoBehaviour
         runner.log = log;
         runner.mode = mode;
         runner.steps = steps;
-        Action? stop = IntroSkip.SplashStop(IntroSkip.Find);
+        Action? stop = IntroSkip.SplashStop(Probe.Find);
         if (stop != null)
         {
             runner.splashAsked = true;
@@ -86,7 +86,7 @@ internal sealed class IntroRunner : MonoBehaviour
     {
         if (step.Delay > 0)
             yield return new WaitForSeconds(step.Delay);
-        Type? type = IntroSkip.Find(step.Type);
+        Type? type = Probe.Find(step.Type);
         if (type == null)
             yield break;
         foreach (UnityEngine.Object target in FindObjectsOfType(type))

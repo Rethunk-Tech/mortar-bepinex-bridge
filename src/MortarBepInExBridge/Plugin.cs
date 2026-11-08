@@ -44,7 +44,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     bool IGameView.PerfStop() => PerfHost.Stop();
 
-    string IGameView.ConfigSync() => ConfigSyncValues.Read(IntroSkip.Find);
+    string IGameView.ConfigSync() => ConfigSyncValues.Read(Probe.Find);
 
     private const int ConsoleWaitMs = 2000;
     private const int ConfigReloadWaitMs = 5000;
@@ -89,7 +89,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     private void Awake()
     {
         LogSources.Install(ReadProfileFile(HiddenLogSourcesFile));
-        GameVersion.Hook(new Harmony(Guid + ".version"), IntroSkip.Find, Hooks?.VersionSources ?? []);
+        GameVersion.Hook(new Harmony(Guid + ".version"), Probe.Find, Hooks?.VersionSources ?? []);
         this.ReadGameVersion();
         this.SceneValue = SceneManager.GetActiveScene().name;
         SceneManager.activeSceneChanged += (_, next) =>
@@ -113,7 +113,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
             rng.GetBytes(raw);
         string token = BitConverter.ToString(raw).Replace("-", "").ToLowerInvariant();
 
-        this.GameConsole = Hooks?.Console(IntroSkip.Find);
+        this.GameConsole = Hooks?.Console(Probe.Find);
         ConsoleRunner.Start(this.Main, this.Logger);
 
         this.Server = new BridgeServer(token, line =>
@@ -140,7 +140,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private void ReadGameVersion()
     {
-        string? own = GameVersion.Read(IntroSkip.Find, Hooks?.VersionSources ?? []);
+        string? own = GameVersion.Read(Probe.Find, Hooks?.VersionSources ?? []);
         this.GameVersionValue = own ?? Application.version;
         this.GameVersionIsGames = own != null;
     }
@@ -172,7 +172,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
                 this.Logger.LogWarning($"Stream overlay is off: {why}.");
             return;
         }
-        IOverlayProvider? provider = Hooks?.Overlay(IntroSkip.Find, this.FindObject);
+        IOverlayProvider? provider = Hooks?.Overlay(Probe.Find, this.FindObject);
         if (provider == null)
         {
             this.Logger.LogWarning($"Stream overlay is on, but this build has no overlay for {Application.productName}.");

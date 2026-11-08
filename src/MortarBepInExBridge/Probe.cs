@@ -1,14 +1,28 @@
 using System;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Reflection;
 
-namespace MortarBepInExBridge.Overlay;
+namespace MortarBepInExBridge;
 
-/// <summary>Reads a game's objects by member name, so a provider names the game's types as strings and the plugin
-/// references no game assembly. Every read answers null when a type, member or value is missing: a game update that
-/// renames something blanks a field instead of throwing.</summary>
+/// <summary>Finds a game's types and members by name, so intro skip, overlay and console name them as strings and
+/// the plugin references no game assembly. Every miss answers null: a game that lacks the type, or a rename, blanks a
+/// field instead of throwing.</summary>
 internal static class Probe
 {
     private const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+    private static readonly ConcurrentDictionary<string, Type?> Types = new();
+
+    /// <summary>The loaded type of that full name, or null in a game that has none.</summary>
+    public static Type? Find(string name)
+    {
+        if (Types.TryGetValue(name, out Type? found))
+            return found;
+        found = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
+        Types.TryAdd(name, found);
+        return found;
+    }
 
     public static object? Static(Type? type, string name) => type == null ? null : Read(type, null, name);
 

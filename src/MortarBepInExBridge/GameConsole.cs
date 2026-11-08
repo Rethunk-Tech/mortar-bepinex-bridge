@@ -25,7 +25,7 @@ internal sealed class ReflectionConsole(Func<Type?> type, string instanceMember,
         Type? t = type();
         if (t == null)
             return "this game's console is not loaded";
-        object? target = Overlay.Probe.Static(t, instanceMember);
+        object? target = Probe.Static(t, instanceMember);
         if (target == null)
             return "the game's console is not open yet";
         foreach (MethodInfo m in target.GetType().GetMethods(Any))

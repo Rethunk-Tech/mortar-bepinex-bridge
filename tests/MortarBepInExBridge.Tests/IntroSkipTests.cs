@@ -34,15 +34,15 @@ public class IntroSkipTests
     [Fact]
     public void AbsentTypesAndUnrelatedObjectsAreLeftAlone()
     {
-        Assert.Null(IntroSkip.Find("NoSuchGameType"));
-        Assert.Equal(typeof(IntroSkip), IntroSkip.Find("MortarBepInExBridge.IntroSkip"));
+        Assert.Null(Probe.Find("NoSuchGameType"));
+        Assert.Equal(typeof(IntroSkip), Probe.Find("MortarBepInExBridge.IntroSkip"));
         IntroSkip.Apply(new object(), Steps[0]);
     }
     [Fact]
     public void FindCachesAMissSoLaterScenesDoNotWalkTheDomainAgain()
     {
-        Assert.Null(IntroSkip.Find("MortarBepInExBridge.NoSuchTypeInThisProcess"));
-        object cache = typeof(IntroSkip).GetField("Types", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null)!;
+        Assert.Null(Probe.Find("MortarBepInExBridge.NoSuchTypeInThisProcess"));
+        object cache = typeof(Probe).GetField("Types", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null)!;
         Assert.True(((System.Collections.IDictionary)cache).Contains("MortarBepInExBridge.NoSuchTypeInThisProcess"));
     }
 }

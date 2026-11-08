@@ -33,7 +33,7 @@ reflection names) larger than a gap-fill and easy to get wrong.
 2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyProvider.cs` and
    `Games/Valheim/ValheimProvider.cs` — the pattern: `Read` returns null out
    of session.
-3. `src/MortarBepInExBridge/Overlay/Probe.cs` — member/method reads by name.
+3. `src/MortarBepInExBridge/Probe.cs` — member/method reads by name.
 4. `src/MortarBepInExBridge/Plugin.cs:178` — warning when the provider is
    null.
 5. `README.md:86` — the key table that ships with a new provider.
@@ -66,7 +66,7 @@ only stop the engine splash there.
 
 Decided shape: more `IntroStep` rows, typed as strings, `choice: true` only
 for Menu mode. No game assemblies. A game that lacks the types is untouched
-(`IntroSkip.Find` returns null, `IntroRunner.RunStep` yields break).
+(`Probe.Find` returns null, `IntroRunner.RunStep` yields break).
 
 Rejected: clicking UI by screen coordinates. Rejected: a Valheim step guessed
 from memory without a measured scene/type list.
