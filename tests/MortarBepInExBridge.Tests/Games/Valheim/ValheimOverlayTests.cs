@@ -22,13 +22,13 @@ public class ValheimOverlayTests
     private enum Biome { BlackForest }
     private sealed class FakeEnv
     {
-        public static FakeEnv instance = new();
+        public static readonly FakeEnv instance = new();
         public int GetDay() => 12;
         public int GetDay(double _) => 99;
     }
     private sealed class FakeZone
     {
-        public static FakeZone instance = new();
+        public static readonly FakeZone instance = new();
         public List<string> GetGlobalKeys() => ["defeated_gdking", "defeated_eikthyr", "something_else"];
     }
 

@@ -5,30 +5,30 @@ namespace MortarBepInExBridge.Tests;
 
 public class LethalCompanyOverlayTests
 {
-    private sealed class Level { public string PlanetName = "41 Experimentation"; }
-    private sealed class Stats { public int daysSpent = 6; }
+    private sealed class Level { public readonly string PlanetName = "41 Experimentation"; }
+    private sealed class Stats { public readonly int daysSpent = 6; }
     private sealed class FakePlayer
     {
-        public string playerUsername = "Zed";
+        public readonly string playerUsername = "Zed";
         public bool isPlayerControlled;
         public bool isPlayerDead;
     }
     private sealed class FakeRound
     {
         public static FakeRound? Instance;
-        public FakePlayer localPlayerController = new() { isPlayerControlled = true };
+        public readonly FakePlayer localPlayerController = new() { isPlayerControlled = true };
         public FakePlayer[] allPlayerScripts = [];
-        public Level currentLevel = new();
-        public Stats gameStats = new();
+        public readonly Level currentLevel = new();
+        public readonly Stats gameStats = new();
     }
     private sealed class FakeTime
     {
-        public static FakeTime Instance = new();
-        public int profitQuota = 400;
-        public int quotaFulfilled = 150;
-        public int daysUntilDeadline = 2;
+        public static readonly FakeTime Instance = new();
+        public readonly int profitQuota = 400;
+        public readonly int quotaFulfilled = 150;
+        public readonly int daysUntilDeadline = 2;
     }
-    private sealed class FakeTerminal { public int groupCredits = 90; }
+    private sealed class FakeTerminal { public readonly int groupCredits = 90; }
 
     private static Type? Find(string name) => name switch
     {
