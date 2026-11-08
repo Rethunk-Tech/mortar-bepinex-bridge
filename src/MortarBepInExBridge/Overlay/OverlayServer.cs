@@ -81,6 +81,8 @@ internal sealed class OverlayServer(int port, string token) : IDisposable
             }
             catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException)
             {
+                // A browser that navigated away or timed out needs no answer. The snapshot stays current for the next
+                // request, which arrives on a connection of its own.
             }
         }
     }

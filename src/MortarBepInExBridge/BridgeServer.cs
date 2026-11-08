@@ -87,6 +87,8 @@ internal sealed class BridgeServer(string token, Func<string, string> handle) : 
             }
             catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException)
             {
+                // The client left before its reply. A connection carries one command, so there is nothing to answer and
+                // nothing to keep; the accept loop takes the next one.
             }
         }
     }
