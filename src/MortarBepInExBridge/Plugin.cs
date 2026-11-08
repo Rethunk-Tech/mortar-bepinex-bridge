@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Security.Cryptography;
 using BepInEx;
 using BepInEx.Bootstrap;
+using BepInEx.Configuration;
 using HarmonyLib;
 using MortarBepInExBridge.Overlay;
 using MortarBepInExBridge.Perf;
@@ -45,6 +47,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     string IGameView.ConfigSync() => ConfigSyncValues.Read(IntroSkip.Find);
 
     private const int ConsoleWaitMs = 2000;
+    private const int ConfigReloadWaitMs = 5000;
     private readonly MainThreadQueue Main = new();
     private IGameConsole? GameConsole;
 
@@ -54,6 +57,33 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         return console == null
             ? $"{Application.productName} has no console Mortar can reach"
             : this.Main.Invoke(() => console.Run(line), ConsoleWaitMs);
+    }
+
+    ConfigReloadResult? IGameView.ConfigReload(string name)
+    {
+        ConfigReloadResult? result = null;
+        string? failure = this.Main.Invoke(() =>
+        {
+            result = ConfigReload.Run(Paths.ConfigPath, name, LoadedConfigs());
+            return null;
+        }, ConfigReloadWaitMs);
+        return failure == null ? result : null;
+    }
+
+    // A ConfigFile shared by several plugins appears once.
+    private static List<ConfigTarget> LoadedConfigs()
+    {
+        var files = new List<ConfigFile>();
+        foreach (PluginInfo info in Chainloader.PluginInfos.Values)
+        {
+            if (info.Instance is BaseUnityPlugin { Config: { } config } && !files.Contains(config))
+                files.Add(config);
+        }
+        // CoreConfig (BepInEx.cfg) is not public in the BepInEx.Core package this builds against.
+        const BindingFlags any = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        if (typeof(ConfigFile).GetProperty("CoreConfig", any)?.GetValue(null) is ConfigFile core && !files.Contains(core))
+            files.Add(core);
+        return files.ConvertAll(file => new ConfigTarget(file.ConfigFilePath, file.Reload));
     }
 
     private void Awake()
@@ -84,8 +114,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         string token = BitConverter.ToString(raw).Replace("-", "").ToLowerInvariant();
 
         this.GameConsole = Hooks?.Console(IntroSkip.Find);
-        if (this.GameConsole != null)
-            ConsoleRunner.Start(this.Main, this.Logger);
+        ConsoleRunner.Start(this.Main, this.Logger);
 
         this.Server = new BridgeServer(token, line =>
         {

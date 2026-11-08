@@ -19,6 +19,14 @@ public class ProtocolTests
 
         public string ConfigSync() => "[]";
 
+        public List<string> Reloads { get; } = [];
+
+        public ConfigReloadResult? ConfigReload(string name)
+        {
+            this.Reloads.Add(name);
+            return new(1, []);
+        }
+
         public List<string> Ran { get; } = [];
 
         public string? Console(string line)
@@ -73,6 +81,8 @@ public class ProtocolTests
         public string? Console(string line) => null;
 
         public string ConfigSync() => "[]";
+
+        public ConfigReloadResult? ConfigReload(string name) => null;
     }
 
     [Fact]
@@ -80,7 +90,7 @@ public class ProtocolTests
     {
         string reply = Protocol.Handle("give money", new Game());
         Assert.StartsWith("error: unknown command \"give money\"", reply);
-        Assert.Contains("ping, status, plugins, perf, perf start, perf stop, configsync or console <line>", reply);
+        Assert.Contains("ping, status, plugins, perf, perf start, perf stop, configsync, config reload <file> or console <line>", reply);
     }
 
     [Fact]
@@ -93,6 +103,20 @@ public class ProtocolTests
         Assert.Equal("error: unknown command second line", Protocol.Handle("console bad", game));
         Assert.StartsWith("error: console needs", Protocol.Handle("console", game));
         Assert.StartsWith("error: console needs", Protocol.Handle("console   ", game));
+    }
+
+    [Fact]
+    public void ConfigReloadValidatesThenAsksTheGameWithTheNameAsGiven()
+    {
+        var game = new Game();
+        Assert.Equal("ok reloaded 1", Protocol.Handle(" Config  RELOAD  Sub/Thing.cfg ", game));
+        Assert.Equal(["Sub/Thing.cfg"], game.Reloads);
+        Assert.StartsWith("error: config reload needs a config file name", Protocol.Handle("config reload", game));
+        Assert.StartsWith("error: config takes", Protocol.Handle("config", game));
+        Assert.StartsWith("error: config takes", Protocol.Handle("config show a.cfg", game));
+        Assert.StartsWith("error: config reload only takes .cfg", Protocol.Handle("config reload a.json", game));
+        Assert.Single(game.Reloads);
+        Assert.StartsWith("error: the game did not run", Protocol.Handle("config reload a.cfg", new UnityGame()));
     }
 
     [Fact]

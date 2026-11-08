@@ -34,6 +34,8 @@ public sealed class Plugin : BasePlugin, IGameView
 
     string IGameView.ConfigSync() => "[]";
 
+    ConfigReloadResult? IGameView.ConfigReload(string name) => null;
+
     public override void Load()
     {
         byte[] raw = new byte[32];

@@ -61,6 +61,9 @@ internal interface IGameView
 
     /// <summary>The host's values of the settings Mortar-ConfigSync shares, as a JSON array.</summary>
     string ConfigSync();
+
+    /// <summary>Makes BepInEx re-read the named config file (validated, relative to its config folder) in every loaded plugin that owns it; null when the game did not run it.</summary>
+    ConfigReloadResult? ConfigReload(string name);
 }
 
 /// <summary>The command protocol: Mortar sends <c>token\ncommand\n</c> and reads one reply line, <c>ok</c>, <c>ok {json}</c> or <c>error: message</c>.</summary>
@@ -82,7 +85,8 @@ internal static class Protocol
     /// <summary>
     /// Run one command line. Most commands are queries:
     /// <c>ping</c> answers <c>ok</c> (the same reply the SMAPI bridge gives a queued command); <c>status</c>, <c>plugins</c>,
-    /// <c>perf</c>, <c>perf start</c>, <c>perf stop</c> and <c>configsync</c> answer <c>ok</c> and JSON; <c>console &lt;line&gt;</c> runs the line in the game's console and answers <c>ok</c>.
+    /// <c>perf</c>, <c>perf start</c>, <c>perf stop</c> and <c>configsync</c> answer <c>ok</c> and JSON; <c>console &lt;line&gt;</c> runs the line in the game's console and answers <c>ok</c>;
+    /// <c>config reload &lt;file&gt;</c> answers <c>ok reloaded N</c>.
     /// </summary>
     public static string Handle(string line, IGameView game)
     {
@@ -97,6 +101,20 @@ internal static class Protocol
                 return "error: console needs a command to run";
             string? failure = game.Console(text);
             return failure == null ? "ok" : "error: " + failure.Replace('\n', ' ').Replace('\r', ' ');
+        }
+
+        if (name == "config" || name.StartsWith("config ", StringComparison.Ordinal))
+        {
+            string[] words = line.Trim().Split([' ', '\t'], 3, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length < 2 || !words[1].Equals("reload", StringComparison.OrdinalIgnoreCase))
+                return "error: config takes reload <file>";
+            // The argument keeps its case and may hold spaces: config names are case-significant on Linux.
+            string file = words.Length > 2 ? words[2].Trim() : "";
+            string? invalid = ConfigReload.Validate(file);
+            if (invalid != null)
+                return "error: " + invalid;
+            ConfigReloadResult? result = game.ConfigReload(file);
+            return result == null ? "error: the game did not run the reload in time" : ConfigReload.Reply(result);
         }
 
         switch (name)
@@ -128,7 +146,7 @@ internal static class Protocol
                     return "error: " + ex.Message;
                 }
             default:
-                return "error: unknown command " + Json.Quote(name) + "; try ping, status, plugins, perf, perf start, perf stop, configsync or console <line>";
+                return "error: unknown command " + Json.Quote(name) + "; try ping, status, plugins, perf, perf start, perf stop, configsync, config reload <file> or console <line>";
         }
     }
 

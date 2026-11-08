@@ -94,7 +94,7 @@ internal sealed class MainThreadQueue
     }
 }
 
-/// <summary>Drains the queue each frame from an object of its own, as <see cref="IntroRunner"/> does, because the plugin's object is not always kept alive.</summary>
+/// <summary>Drains the queue (console lines, config reloads) each frame from an object of its own, as <see cref="IntroRunner"/> does, because the plugin's object is not always kept alive.</summary>
 internal sealed class ConsoleRunner : MonoBehaviour
 {
     private MainThreadQueue? queue;
@@ -104,7 +104,7 @@ internal sealed class ConsoleRunner : MonoBehaviour
         var host = new GameObject("MortarBridgeConsole") { hideFlags = HideFlags.HideAndDontSave };
         DontDestroyOnLoad(host);
         host.AddComponent<ConsoleRunner>().queue = queue;
-        log.LogInfo("Console passthrough is on.");
+        log.LogInfo("Main-thread queue is on.");
     }
 
     private void Update() => this.queue?.Drain();
