@@ -35,7 +35,7 @@ internal static class PerfReport
         var sb = new StringBuilder("{\"measured\":true,\"instrumented\":").Append(graph != null ? "true" : "false")
             .Append(",\"seconds\":").Append(Num(frames.TotalMs / 1000))
             .Append(",\"frames\":").Append(frames.Frames)
-            .Append(",\"fps\":").Append(Num(frames.TotalMs > 0 ? frames.Frames * 1000 / frames.TotalMs : 0))
+            .Append(",\"fps\":").Append(Num(frames.TotalMs > 0 ? frames.Frames * 1000.0 / frames.TotalMs : 0))
             .Append(",\"frameMs\":{\"avg\":").Append(Num(frames.AverageMs))
             .Append(",\"p50\":").Append(Num(frames.Percentile(0.5)))
             .Append(",\"p95\":").Append(Num(frames.Percentile(0.95)))
