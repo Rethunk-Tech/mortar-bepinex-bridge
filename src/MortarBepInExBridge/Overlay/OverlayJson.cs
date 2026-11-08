@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 namespace MortarBepInExBridge.Overlay;
@@ -12,15 +13,13 @@ internal static class OverlayJson
     {
         var sb = new StringBuilder("{");
         bool first = true;
-        foreach (KeyValuePair<string, object?> pair in values)
+        foreach (KeyValuePair<string, object?> pair in values.Where(pair => pair.Value != null))
         {
-            if (pair.Value == null)
-                continue;
             if (!first)
                 sb.Append(',');
             first = false;
             sb.Append(Json.Quote(pair.Key)).Append(':');
-            Append(sb, pair.Value);
+            Append(sb, pair.Value!);
         }
         return sb.Append('}').ToString();
     }

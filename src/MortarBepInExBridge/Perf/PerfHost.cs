@@ -130,12 +130,10 @@ internal sealed class PerfHost : MonoBehaviour
     private void Instrument()
     {
         Dictionary<Assembly, string> assemblies = [];
-        foreach (PluginInfo info in Chainloader.PluginInfos.Values)
-        {
-            // Compared as an object: a plugin whose GameObject a scene load destroyed is still its assembly's plugin.
-            if ((object?)info.Instance is { } plugin && info.Metadata.GUID != Plugin.Guid)
-                assemblies[plugin.GetType().Assembly] = info.Metadata.GUID;
-        }
+        // Compared as an object: a plugin whose GameObject a scene load destroyed is still its assembly's plugin.
+        foreach (PluginInfo info in Chainloader.PluginInfos.Values
+            .Where(info => info.Metadata.GUID != Plugin.Guid && (object?)info.Instance is not null))
+            assemblies[info.Instance!.GetType().Assembly] = info.Metadata.GUID;
         this.graph = PatchGraph.Build(Edges(), HarmonyId, a => assemblies.TryGetValue(a, out string? guid) ? guid : null);
         List<(MethodInfo Method, string Plugin)> timed = [.. this.graph.Timed];
         foreach (KeyValuePair<Assembly, string> plugin in assemblies)
@@ -229,11 +227,11 @@ internal sealed class PerfHost : MonoBehaviour
         if (type.ContainsGenericParameters || !typeof(MonoBehaviour).IsAssignableFrom(type))
             yield break;
         const BindingFlags declared = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-        foreach (string name in UpdateMethods)
-        {
-            if (type.GetMethod(name, declared, null, Type.EmptyTypes, null) is { IsAbstract: false } method)
-                yield return method;
-        }
+        foreach (MethodInfo method in UpdateMethods
+            .Select(name => type.GetMethod(name, declared, null, Type.EmptyTypes, null))
+            .OfType<MethodInfo>()
+            .Where(method => !method.IsAbstract))
+            yield return method;
     }
 
     private static void Enter(out long __state) =>

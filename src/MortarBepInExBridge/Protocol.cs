@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -23,10 +24,8 @@ internal sealed class PluginRow(string guid, string name, string version, string
             return "";
         string relative = file[root.Length..];
         int depth = 0;
-        foreach (string part in relative.Split('/'))
+        foreach (string part in relative.Split('/').Where(part => part.Length > 0 && part != "."))
         {
-            if (part.Length == 0 || part == ".")
-                continue;
             if (part == "..")
             {
                 if (--depth < 0)

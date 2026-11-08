@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace MortarBepInExBridge.Perf;
@@ -31,10 +32,8 @@ internal sealed class PatchGraph
     {
         var graph = new PatchGraph();
         var seen = new HashSet<MethodInfo>();
-        foreach (PatchEdge e in edges)
+        foreach (PatchEdge e in edges.Where(e => e.Owner != self))
         {
-            if (e.Owner == self)
-                continue;
             string plugin = pluginOf(e.Patch.DeclaringType?.Assembly ?? e.Patch.Module.Assembly) ?? e.Owner;
             if (!graph.Owners.TryGetValue(e.Owner, out SortedSet<string>? targets))
                 graph.Owners[e.Owner] = targets = new SortedSet<string>(StringComparer.Ordinal);

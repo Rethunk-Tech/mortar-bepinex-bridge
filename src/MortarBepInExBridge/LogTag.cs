@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -17,15 +18,11 @@ internal static class LogTag
     // frame reads 0), so the masked text tells one method's calls apart instead.
     internal static string? CallSite(StackTrace trace, Func<MethodBase, bool> skip)
     {
-        foreach (StackFrame frame in trace.GetFrames() ?? [])
-        {
-            MethodBase? method = frame.GetMethod();
-            Type? type = method?.DeclaringType;
-            if (method == null || type == null || skip(method))
-                continue;
-            return $"{type.FullName}::{method.Name}";
-        }
-        return null;
+        MethodBase? method = (trace.GetFrames() ?? [])
+            .Select(frame => frame.GetMethod())
+            .OfType<MethodBase>()
+            .FirstOrDefault(method => method.DeclaringType != null && !skip(method));
+        return method is { DeclaringType: { } type } ? $"{type.FullName}::{method.Name}" : null;
     }
 
     internal static string Of(string? site, string? path)
@@ -57,9 +54,9 @@ internal static class LogTag
     internal static Dictionary<string, List<(string Text, string Object)>> ParseHidden(string? text)
     {
         var hidden = new Dictionary<string, List<(string, string)>>(StringComparer.Ordinal);
-        foreach (string line in (text ?? "").Split('\n'))
+        foreach (string line in (text ?? "").Split('\n').Select(line => line.TrimEnd('\r')))
         {
-            string[] f = line.TrimEnd('\r').Split('\t');
+            string[] f = line.Split('\t');
             if (!f[0].Contains("::"))
                 continue;
             if (!hidden.TryGetValue(f[0], out var list))

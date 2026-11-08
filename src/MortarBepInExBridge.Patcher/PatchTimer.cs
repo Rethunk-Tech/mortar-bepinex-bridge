@@ -75,10 +75,8 @@ internal static class PatchTiming
             asm.GetType("HarmonyLib.PatchClassProcessor")?.GetMethod("Patch", Any, null, Type.EmptyTypes, null),
             asm.GetType("HarmonyLib.PatchProcessor")?.GetMethod("Patch", Any, null, Type.EmptyTypes, null),
         ];
-        foreach (MethodBase? target in targets)
+        foreach (MethodBase target in targets.OfType<MethodBase>())
         {
-            if (target == null)
-                continue;
             object?[] args = new object?[parameters.Length];
             args[0] = target;
             args[prefix] = begin;
