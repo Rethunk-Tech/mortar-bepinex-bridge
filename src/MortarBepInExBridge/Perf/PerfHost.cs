@@ -147,17 +147,23 @@ internal sealed class PerfHost : MonoBehaviour
 
         this.plugins = [.. timed.Select(t => t.Plugin).Concat(this.graph.Patches.Keys).Distinct()];
         Dictionary<string, int> index = this.plugins.Select((guid, i) => (guid, i)).ToDictionary(p => p.guid, p => p.i);
-        startupPlugins = this.plugins;
-        costs = new CostTracker(this.plugins.Count);
         Dictionary<MethodBase, int> owners = [];
         foreach ((MethodInfo method, string plugin) in timed)
             owners.TryAdd(method, index[plugin]);
-        pluginOf = owners;
+        Publish(this.plugins, owners);
         this.harmony = new Harmony(HarmonyId);
         this.enter = new HarmonyMethod(typeof(PerfHost).GetMethod(nameof(Enter), BindingFlags.Static | BindingFlags.NonPublic));
         this.exit = new HarmonyMethod(typeof(PerfHost).GetMethod(nameof(Exit), BindingFlags.Static | BindingFlags.NonPublic));
         foreach (MethodBase method in owners.Keys)
             this.pending.Enqueue(method);
+    }
+
+    // The static snapshot Enter and Exit read on every patched call is published in one place.
+    private static void Publish(List<string> plugins, Dictionary<MethodBase, int> owners)
+    {
+        startupPlugins = plugins;
+        costs = new CostTracker(plugins.Count);
+        pluginOf = owners;
     }
 
     private void WrapSome()
