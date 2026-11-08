@@ -80,10 +80,11 @@ internal sealed class LogSources : ILogHandler
             };
             if (t == null)
                 return context == null ? null : context.name;
-            string path = t.name;
-            for (Transform? p = t.parent; p != null; p = p.parent)
-                path = p.name + "/" + path;
-            return path;
+            var names = new List<string>();
+            for (Transform? p = t; p != null; p = p.parent)
+                names.Add(p.name);
+            names.Reverse();
+            return string.Join("/", names);
         }
         catch (UnityException)
         {
