@@ -19,7 +19,6 @@
     <Compile Include="../MortarBepInExBridge/ConfigReload.cs" Link="Shared/ConfigReload.cs" />
     <Compile Include="../MortarBepInExBridge/Files.cs" Link="Shared/Files.cs" />
     <Compile Include="../MortarBepInExBridge/Json.cs" Link="Shared/Json.cs" />
-    <Compile Include="../MortarBepInExBridge/LogTag.cs" Link="Shared/LogTag.cs" />
   </ItemGroup>
 
   <ItemGroup>
