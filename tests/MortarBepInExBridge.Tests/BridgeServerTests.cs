@@ -19,6 +19,20 @@ public class BridgeServerTests
         return reader.ReadLine() ?? "";
     }
 
+    /// <summary>The connections a test holds open across its assertions, closed when the test's scope ends.</summary>
+    private sealed class Held : IDisposable
+    {
+        private readonly List<TcpClient> clients = [];
+
+        public void Add(TcpClient client) => this.clients.Add(client);
+
+        public void Dispose()
+        {
+            foreach (TcpClient client in this.clients)
+                client.Dispose();
+        }
+    }
+
     private static BridgeServer Started(Func<string, string> handle)
     {
         var server = new BridgeServer("secret", handle);
@@ -50,25 +64,17 @@ public class BridgeServerTests
     public void ExtraClientsAreClosedWhenTheCapIsFull()
     {
         using var server = Started(_ => "ok");
-        var held = new List<TcpClient>();
-        try
+        using var held = new Held();
+        for (int i = 0; i < BridgeServer.MaxClients; i++)
         {
-            for (int i = 0; i < BridgeServer.MaxClients; i++)
-            {
-                var idle = new TcpClient();
-                idle.Connect(IPAddress.Loopback, server.Port);
-                held.Add(idle);
-            }
-            using var extra = new TcpClient();
-            extra.Connect(IPAddress.Loopback, server.Port);
-            extra.ReceiveTimeout = 1000;
-            Assert.Equal(0, extra.GetStream().Read(new byte[1], 0, 1));
+            var idle = new TcpClient();
+            idle.Connect(IPAddress.Loopback, server.Port);
+            held.Add(idle);
         }
-        finally
-        {
-            foreach (TcpClient idle in held)
-                idle.Dispose();
-        }
+        using var extra = new TcpClient();
+        extra.Connect(IPAddress.Loopback, server.Port);
+        extra.ReceiveTimeout = 1000;
+        Assert.Equal(0, extra.GetStream().Read(new byte[1], 0, 1));
     }
 
     [Fact]
