@@ -39,7 +39,7 @@ public class IntroSkipTests
         IntroSkip.Apply(new object(), Steps[0]);
     }
     [Fact]
-    public void PluginLogsAliveAfterEachSceneForBisect()
+    public void PluginLogsAliveOncePerLaunchForBisect()
     {
         DirectoryInfo? dir = new(AppContext.BaseDirectory);
         while (dir != null && !File.Exists(Path.Join(dir.FullName, "MortarBepInExBridge.slnx")))
@@ -47,8 +47,10 @@ public class IntroSkipTests
         Assert.NotNull(dir);
         string plugin = File.ReadAllText(Path.Join(dir.FullName, "src/MortarBepInExBridge/Plugin.cs"));
         string intro = File.ReadAllText(Path.Join(dir.FullName, "src/MortarBepInExBridge/IntroRunner.cs"));
-        Assert.Contains("Bridge plugin alive after scene {scene.name}", plugin);
-        Assert.DoesNotContain("Bridge plugin alive after scene {scene.name}", intro);
+        // Bisect's regex is anchored on this exact shape, scene name and all.
+        Assert.Contains("Bridge plugin alive after scene {scene.name}: {this != null}", plugin);
+        Assert.Contains("if (this.aliveLogged)", plugin);
+        Assert.DoesNotContain("Bridge plugin alive after scene", intro);
     }
 
     [Fact]
