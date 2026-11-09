@@ -45,7 +45,7 @@ public class LethalCompanyOverlayTests
         {
             allPlayerScripts = [new() { isPlayerControlled = true }, new() { isPlayerDead = true }, new()],
         };
-        IOverlayProvider provider = BuiltGame.Hooks!.Overlay(Find, _ => new FakeTerminal())!;
+        IOverlayProvider provider = BuiltGame.For("Lethal Company")!.Overlay(Find, _ => new FakeTerminal())!;
         string json = OverlayProviders.Snapshot(provider, ex => throw ex);
         Assert.Equal(
             "{\"inGame\":true,\"game\":\"lethal-company\",\"playerName\":\"Zed\",\"moon\":\"Experimentation\",\"crewAlive\":1,\"crewTotal\":2,\"day\":6,\"quota\":400,\"quotaProgress\":150,\"daysLeft\":2,\"credits\":90}",
@@ -56,7 +56,7 @@ public class LethalCompanyOverlayTests
     public void LethalCompanyIsNotInGameWithoutARound()
     {
         FakeRound.Instance = null;
-        IOverlayProvider provider = BuiltGame.Hooks!.Overlay(Find, _ => null)!;
+        IOverlayProvider provider = BuiltGame.For("Lethal Company")!.Overlay(Find, _ => null)!;
         Assert.Equal(OverlayServer.NotInGame, OverlayProviders.Snapshot(provider, ex => throw ex));
     }
 }

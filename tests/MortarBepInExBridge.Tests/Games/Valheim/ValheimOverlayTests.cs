@@ -36,7 +36,7 @@ public class ValheimOverlayTests
     public void ValheimReadsBiomeDayAndBossesInOrder()
     {
         FakeValheimPlayer.m_localPlayer = new FakeValheimPlayer();
-        IOverlayProvider provider = BuiltGame.Hooks!.Overlay(Find, _ => null)!;
+        IOverlayProvider provider = BuiltGame.For("Valheim")!.Overlay(Find, _ => null)!;
         Assert.Equal(
             "{\"inGame\":true,\"game\":\"valheim\",\"playerName\":\"Ragna\",\"biome\":\"BlackForest\",\"day\":12,\"bossesDefeated\":[\"Eikthyr\",\"The Elder\"],\"bossCount\":2}",
             OverlayProviders.Snapshot(provider, ex => throw ex));

@@ -23,7 +23,8 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     private const string StateFileName = "mortar-bepinex-bridge.json";
     private const string HiddenLogSourcesFile = "startup/hidden-log-sources";
 
-    private static IGameHooks? Hooks => BuiltGame.Hooks;
+    // One DLL serves every game it has a row for, so the row is the one matching this game's Application.productName.
+    private IGameHooks? Hooks;
 
     private BridgeServer? Server;
     private OverlayServer? Overlay;
@@ -91,6 +92,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     private void Awake()
     {
+        this.Hooks = BuiltGame.For(Application.productName);
         LogSources.Install(ReadProfileFile(HiddenLogSourcesFile));
         GameVersion.Hook(this.VersionPatches, Probe.Find, Hooks?.VersionSources ?? []);
         this.ReadGameVersion();
@@ -182,7 +184,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         IOverlayProvider? provider = Hooks?.Overlay(Probe.Find, this.FindObject);
         if (provider == null)
         {
-            this.Logger.LogWarning($"Stream overlay is on, but this build has no overlay for {Application.productName}.");
+            this.Logger.LogWarning($"Stream overlay is on, but this DLL has no overlay for {Application.productName}.");
             return;
         }
         try

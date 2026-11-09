@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Builds Release once per package (the core build, then one per folder below src/MortarBepInExBridge/Games) and writes,
-# for each, dist/<name>-<version>.zip (the layout BepInEx-format installs and Mortar read): manifest.json, icon.png (assets/icon.png, 256x256) and
-# README.md at the zip root, the plugin dll under plugins/ and the startup-timing patcher dll under patchers/. <name> is
-# MortarBepInExBridge for the core build and MortarBepInExBridge_<Game> for a game build. It also writes
-# <name>-<version>-nexus.zip, the same dlls under BepInEx/plugins/ and BepInEx/patchers/, which unpacks into the game
-# folder as Nexus Mods and Vortex expect. The package description comes from packages/<Game or core>.txt.
+# Builds Release once, since one DLL serves every Mono game, and writes dist/MortarBepInExBridge-<version>.zip (the layout
+# BepInEx-format installs and Mortar read): manifest.json, icon.png (assets/icon.png, 256x256) and README.md at the zip
+# root, the plugin dll under plugins/ and the startup-timing patcher dll under patchers/. It also writes
+# MortarBepInExBridge-<version>-nexus.zip, the same dlls under BepInEx/plugins/ and BepInEx/patchers/, which unpacks into
+# the game folder as Nexus Mods and Vortex expect. The package description comes from packages/core.txt.
 # MortarBepInExBridge_IL2CPP is the BepInEx 6 IL2CPP plugin (src/MortarBepInExBridge.IL2CPP): no startup patcher, which is a
 # BepInEx 5 preloader, so its zips hold the plugin dll alone. DIST overrides the output folder (default dist/).
 set -euo pipefail
@@ -30,18 +29,14 @@ dotnet restore --locked-mode "$patcher"
 dotnet build "$patcher" -c Release --no-restore
 
 package() {
-  local game="$1" name="MortarBepInExBridge" desc="$root/packages/core.txt"
-  if [ -n "$game" ]; then
-    name="MortarBepInExBridge_$game"
-    desc="$root/packages/$game.txt"
-  fi
+  local name="MortarBepInExBridge" desc="$root/packages/core.txt"
   local description stage nexus zip nexus_zip
   description="$(head -n 1 "$desc")"
   [ -n "$description" ] || {
     echo "no description in $desc" >&2
     exit 1
   }
-  dotnet build "$csproj" -c Release --no-restore -p:Game="$game"
+  dotnet build "$csproj" -c Release --no-restore
   stage="$scratch/$name-stage"
   mkdir -p "$stage/plugins" "$stage/patchers"
   cp "$root/src/MortarBepInExBridge/bin/Release/netstandard2.1/MortarBepInExBridge.dll" "$stage/plugins/"
@@ -66,10 +61,7 @@ package() {
   echo "$nexus_zip"
 }
 
-package ""
-for dir in "$root"/src/MortarBepInExBridge/Games/*/; do
-  package "$(basename "$dir")"
-done
+package
 
 name="MortarBepInExBridge_IL2CPP"
 dotnet build "$il2cpp" -c Release --no-restore

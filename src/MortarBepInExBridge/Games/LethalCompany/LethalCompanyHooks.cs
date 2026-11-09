@@ -22,6 +22,8 @@ internal sealed class LethalCompanyHooks : IGameHooks
     // The menu shows v81 from GameNetworkManager.gameVersionNum while Application.version is 0.1.
     public static readonly GameVersionSource[] Versions = [new("GameNetworkManager", "Instance", "gameVersionNum", "v{0}", "Awake")];
 
+    public string ProductName => "Lethal Company";
+
     public IOverlayProvider? Overlay(Func<string, Type?> find, Func<Type, object?> findObject) => new LethalCompanyProvider(find, findObject);
 
     public IGameConsole? Console(Func<string, Type?> find) => null;

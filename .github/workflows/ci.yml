@@ -92,7 +92,7 @@ jobs:
             gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes dist/*
           fi
 
-  # Nexus Mods hosts one page per game; each gets its game's BepInEx-tree zip.
+  # Nexus Mods hosts one page per game; each gets the one BepInEx-tree zip, since one DLL serves every Mono game.
   nexus:
     needs: release
     if: startsWith(github.ref, 'refs/tags/v')
@@ -106,7 +106,7 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           n=0
-          until gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber --pattern "MortarBepInExBridge_*-$version-nexus.zip"; do
+          until gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber --pattern "MortarBepInExBridge-*-nexus.zip"; do
             n=$((n + 1))
             [ "$n" -lt 5 ] || exit 1
             sleep 10
@@ -118,7 +118,7 @@ jobs:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
           mod_id: 25116968747323
           file_id: 8165133
-          filename: MortarBepInExBridge_LethalCompany-${{ steps.zip.outputs.version }}-nexus.zip
+          filename: MortarBepInExBridge-${{ steps.zip.outputs.version }}-nexus.zip
           version: ${{ steps.zip.outputs.version }}
           display_name: Mortar BepInEx Bridge
           archive_existing_version: true
@@ -130,7 +130,7 @@ jobs:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
           mod_id: 15749645078876
           file_id: 8165145
-          filename: MortarBepInExBridge_Valheim-${{ steps.zip.outputs.version }}-nexus.zip
+          filename: MortarBepInExBridge-${{ steps.zip.outputs.version }}-nexus.zip
           version: ${{ steps.zip.outputs.version }}
           display_name: Mortar BepInEx Bridge
           archive_existing_version: true
@@ -150,11 +150,9 @@ jobs:
           - game: Lethal Company
             host: lethal-company.curseforge.com
             project: 1747636
-            package: MortarBepInExBridge_LethalCompany
           - game: Valheim
             host: valheim.curseforge.com
             project: 1747644
-            package: MortarBepInExBridge_Valheim
     name: curseforge (${{ matrix.game }})
     steps:
       - name: Upload to CurseForge (project ${{ matrix.project }})
@@ -164,10 +162,9 @@ jobs:
           API: https://${{ matrix.host }}/api
           PROJECT: ${{ matrix.project }}
           GAME: ${{ matrix.game }}
-          PACKAGE: ${{ matrix.package }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          zip="$PACKAGE-$version-nexus.zip"
+          zip="MortarBepInExBridge-$version-nexus.zip"
           n=0
           until gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber --pattern "$zip"; do
             n=$((n + 1))

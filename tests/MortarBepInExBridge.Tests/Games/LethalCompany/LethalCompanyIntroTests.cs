@@ -20,7 +20,7 @@ public class LethalCompanyIntroTests
         public void ChooseLaunchOption(bool online) => this.Chose = online;
     }
 
-    private static IEnumerable<IntroStep> For(string scene, IntroMode mode) => IntroSkip.For(BuiltGame.Hooks!.IntroSteps, scene, mode);
+    private static IEnumerable<IntroStep> For(string scene, IntroMode mode) => IntroSkip.For(BuiltGame.For("Lethal Company")!.IntroSteps, scene, mode);
 
     [Fact]
     public void ThePlayersSettingSkipsAnimationsButLeavesTheLaunchChoiceAlone()

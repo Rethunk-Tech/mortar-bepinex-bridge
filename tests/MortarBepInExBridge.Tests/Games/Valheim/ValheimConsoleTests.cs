@@ -15,7 +15,7 @@ public class ValheimConsoleTests
     [Fact]
     public void TheConsoleIsValheimsInstanceTryRunCommand()
     {
-        IGameConsole console = BuiltGame.Hooks!.Console(name => name == "Console" ? typeof(Console) : null)!;
+        IGameConsole console = BuiltGame.For("Valheim")!.Console(name => name == "Console" ? typeof(Console) : null)!;
         Assert.Null(console.Run("Spawn Boar"));
         Assert.Equal("Spawn Boar", Console.instance.Ran);
     }

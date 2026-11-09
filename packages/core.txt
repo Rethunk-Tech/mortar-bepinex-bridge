@@ -1,1 +1,1 @@
-Lets the Mortar mod manager query a running BepInEx game over a token-protected loopback socket. Installed by Mortar.
+Lets the Mortar mod manager query a running BepInEx 5 Mono game over a token-protected loopback socket, and skip intros, run the game's console and report its version where the game is known. Installed by Mortar.
