@@ -35,7 +35,6 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     private volatile bool GameVersionIsGames;
     // Unity objects are main-thread only, so the socket threads read this copy, which the scene event keeps current.
     private volatile string SceneValue = "";
-    private bool aliveLogged;
 
     string IGameView.GameVersion => this.GameVersionValue;
 
@@ -101,16 +100,10 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
             this.SceneValue = next.name;
             this.ReadGameVersion();
         };
-        // Unity's own null check: a destroyed plugin is not a null reference. Mortar's bisect reads this line to tell a
-        // live launch from one whose plugin died with its first scene, so one line per launch answers it; later scenes
-        // only repeat the same fact.
+        // Unity's own null check: a destroyed plugin is not a null reference. The regress reads this line to learn
+        // whether the loader kept the plugin alive across scene loads.
         SceneManager.sceneLoaded += (scene, _) =>
-        {
-            if (this.aliveLogged)
-                return;
-            this.aliveLogged = true;
             this.Logger.LogInfo($"Bridge plugin alive after scene {scene.name}: {this != null}");
-        };
         // Only a real quit stops the server: in Lethal Company, with BepInEx's default HideManagerGameObject=false, the
         // first scene load destroys the manager object and this component with it, while the game runs on.
         Application.quitting += this.Shutdown;
