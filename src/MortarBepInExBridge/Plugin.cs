@@ -63,12 +63,12 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
             : this.Main.Invoke(() => console.Run(line), ConsoleWaitMs);
     }
 
-    ConfigReloadResult? IGameView.ConfigReload(string name)
+    ConfigReloadResult? IGameView.ConfigReload(string file)
     {
         ConfigReloadResult? result = null;
         string? failure = this.Main.Invoke(() =>
         {
-            result = ConfigReload.Run(Paths.ConfigPath, name, LoadedConfigs());
+            result = ConfigReload.Run(Paths.ConfigPath, file, LoadedConfigs());
             return null;
         }, ConfigReloadWaitMs);
         return failure == null ? result : null;

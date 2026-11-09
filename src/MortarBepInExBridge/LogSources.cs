@@ -80,8 +80,8 @@ internal sealed class LogSources : ILogHandler
             };
             if (t == null)
                 return context == null ? null : context.name;
-            var names = new List<string>();
-            for (Transform? p = t; p is not null; p = p.parent)
+            var names = new List<string> { t.name };
+            for (Transform? p = t.parent; p is not null; p = p.parent)
                 names.Add(p.name);
             names.Reverse();
             return string.Join("/", names);

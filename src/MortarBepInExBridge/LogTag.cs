@@ -54,10 +54,8 @@ internal static class LogTag
     internal static Dictionary<string, List<(string Text, string Object)>> ParseHidden(string? text)
     {
         var hidden = new Dictionary<string, List<(string, string)>>(StringComparer.Ordinal);
-        foreach (string[] f in (text ?? "").Split('\n').Select(line => line.TrimEnd('\r').Split('\t')))
+        foreach (string[] f in (text ?? "").Split('\n').Select(line => line.TrimEnd('\r').Split('\t')).Where(f => f[0].Contains("::")))
         {
-            if (!f[0].Contains("::"))
-                continue;
             if (!hidden.TryGetValue(f[0], out var list))
                 hidden[f[0]] = list = [];
             list.Add((f.Length > 1 ? f[1] : "", f.Length > 2 ? f[2] : ""));
