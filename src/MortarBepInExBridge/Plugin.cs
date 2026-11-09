@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using System.Reflection;
 using System.Security.Cryptography;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using HarmonyLib;
-using MortarBepInExBridge.Overlay;
 using MortarBepInExBridge.Perf;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -27,7 +25,6 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     private IGameHooks? Hooks;
 
     private BridgeServer? Server;
-    private OverlayServer? Overlay;
     // Its patches hold the game's own version as it was before mods changed it, so it is held for the whole process
     // rather than made and released around one hook call.
     private readonly Harmony VersionPatches = new(Guid + ".version");
@@ -146,7 +143,6 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
             throw;
         }
         this.Logger.LogInfo($"Listening on 127.0.0.1:{this.Server.Port}.");
-        this.StartOverlay();
     }
 
     private void ReadGameVersion()
@@ -154,53 +150,6 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         string? own = GameVersion.Read(Probe.Find, Hooks?.VersionSources ?? []);
         this.GameVersionValue = own ?? Application.version;
         this.GameVersionIsGames = own != null;
-    }
-
-    private readonly Dictionary<Type, UnityEngine.Object> Found = [];
-
-    // Looks a scene object up once and again only after Unity has destroyed it.
-    private object? FindObject(Type type)
-    {
-        if (!this.Found.TryGetValue(type, out UnityEngine.Object? found) || !found)
-        {
-            found = UnityEngine.Object.FindObjectOfType(type);
-            if (found)
-                this.Found[type] = found;
-            else
-                this.Found.Remove(type);
-        }
-        return found ? found : null;
-    }
-
-    // Only when Mortar's stream overlay setting is on, and only for a game that has a provider.
-    private void StartOverlay()
-    {
-        string? overlayJson = ReadProfileFile(OverlayConfig.File);
-        OverlayConfig? config = OverlayConfig.Parse(overlayJson);
-        if (config == null)
-        {
-            if (OverlayConfig.InvalidWhenEnabled(overlayJson) is { } why)
-                this.Logger.LogWarning($"Stream overlay is off: {why}.");
-            return;
-        }
-        IOverlayProvider? provider = Hooks?.Overlay(Probe.Find, this.FindObject);
-        if (provider == null)
-        {
-            this.Logger.LogWarning($"Stream overlay is on, but this DLL has no overlay for {Application.productName}.");
-            return;
-        }
-        try
-        {
-            var server = new OverlayServer(config.Port, config.Token);
-            server.Start();
-            OverlayRunner.Start(server, provider, this.Logger);
-            this.Overlay = server;
-            this.Logger.LogInfo($"Stream overlay for {provider.Game} on 127.0.0.1:{config.Port}.");
-        }
-        catch (SocketException ex)
-        {
-            this.Logger.LogError($"Stream overlay is off: could not bind 127.0.0.1:{config.Port}: {ex.Message}");
-        }
     }
 
     // A request Mortar leaves in the profile folder that holds BepInEx's, which a Steam launch reaches where the environment does not.
@@ -217,8 +166,6 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     {
         this.Server?.Dispose();
         this.Server = null;
-        this.Overlay?.Dispose();
-        this.Overlay = null;
         if (this.StatePath != null)
         {
             if (Files.TryDelete(this.StatePath) is { } error)

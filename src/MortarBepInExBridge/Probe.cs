@@ -5,8 +5,8 @@ using System.Reflection;
 
 namespace MortarBepInExBridge;
 
-/// <summary>Finds a game's types and members by name, so intro skip, overlay and console name them as strings and
-/// the plugin references no game assembly. Every miss answers null: a game that lacks the type, or a rename, blanks a
+/// <summary>Finds a game's types and members by name, so intro skip, the game version and the console name them as
+/// strings and the plugin references no game assembly. Every miss answers null: a game that lacks the type, or a rename, blanks a
 /// field instead of throwing.</summary>
 internal static class Probe
 {

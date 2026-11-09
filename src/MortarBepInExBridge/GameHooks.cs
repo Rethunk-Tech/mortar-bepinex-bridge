@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MortarBepInExBridge.Overlay;
 
 namespace MortarBepInExBridge;
 
@@ -11,9 +10,6 @@ internal interface IGameHooks
 {
     /// <summary>The Unity <c>Application.productName</c> of the game these hooks serve.</summary>
     string ProductName { get; }
-
-    /// <summary>The overlay values of the game, or null when it has none. <c>findObject</c> finds the one live object of a Unity type.</summary>
-    IOverlayProvider? Overlay(Func<string, Type?> find, Func<Type, object?> findObject);
 
     /// <summary>The game's own command console, or null.</summary>
     IGameConsole? Console(Func<string, Type?> find);

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using MortarBepInExBridge.Overlay;
 
 namespace MortarBepInExBridge.Games.LethalCompany;
 
@@ -23,8 +22,6 @@ internal sealed class LethalCompanyHooks : IGameHooks
     public static readonly GameVersionSource[] Versions = [new("GameNetworkManager", "Instance", "gameVersionNum", "v{0}", "Awake")];
 
     public string ProductName => "Lethal Company";
-
-    public IOverlayProvider? Overlay(Func<string, Type?> find, Func<Type, object?> findObject) => new LethalCompanyProvider(find, findObject);
 
     public IGameConsole? Console(Func<string, Type?> find) => null;
 

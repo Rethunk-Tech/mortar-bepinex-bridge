@@ -17,6 +17,17 @@ public class CoreBuildTests
         Assert.Null(BuiltGame.For(null));
     }
 
+    // The stream overlay left the companion for its own mod; a namespace left behind would ship its socket server again,
+    // and the 0.5.x companion and that mod must never both bind the overlay port.
+    [Fact]
+    public void TheDllHasNoOverlayNamespace()
+    {
+        using var file = File.OpenRead(typeof(BuiltGame).Assembly.Location);
+        using var pe = new PEReader(file);
+        MetadataReader md = pe.GetMetadataReader();
+        Assert.DoesNotContain(md.TypeDefinitions, h => md.GetString(md.GetTypeDefinition(h).Namespace).StartsWith("MortarBepInExBridge.Overlay", StringComparison.Ordinal));
+    }
+
     // Intro skip, console and the game version all read game members through Probe, so it has to stay in the plugin's
     // own namespace rather than move in with the feature that first needed it.
     [Fact]
