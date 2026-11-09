@@ -5,57 +5,6 @@ exists; this file is the only place that describes what does not.
 
 Sections are unordered.
 
-## Overlay providers cover only Lethal Company and Valheim
-
-`IGameHooks.Overlay` (`GameHooks.cs:13`) is what a game build implements.
-Lethal Company and Valheim each return a provider; the core build's
-`BuiltGame.Hooks` is null. Any other BepInEx 5 game that Mortar launches with
-stream overlay on hits `Plugin.StartOverlay` (`Plugin.cs:179`): it logs a
-warning and leaves the HTTP server off. The command channel still works.
-README's overlay key table (`README.md:86`) lists only those two games.
-
-Decided shape: one `IOverlayProvider` per Mortar game id that has an OBS
-layout, named types as strings, `Probe` for reads, registered through that
-game's `IGameHooks.Overlay`. Keys match the page layout; a renamed field is
-omitted, never zero. `TheCoreBuildHasNoGameHooks` (`CoreBuildTests.cs:11`)
-keeps the core build (no `-p:Game`) as null.
-
-Rejected: a generic "dump public fields" provider. The page needs named keys.
-Rejected: shipping game assemblies.
-
-Deferred because each game is a research task (session object, in-game test,
-reflection names) larger than a gap-fill and easy to get wrong.
-
-### Read
-
-1. `src/MortarBepInExBridge/GameHooks.cs:13` `IGameHooks.Overlay` — the
-   method a new game implements.
-2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyProvider.cs` and
-   `Games/Valheim/ValheimProvider.cs` — the pattern: `Read` returns null out
-   of session.
-3. `src/MortarBepInExBridge/Probe.cs` — member/method reads by name.
-4. `src/MortarBepInExBridge/Plugin.cs:192` — warning when the provider is
-   null.
-5. `README.md:86` — the key table that ships with a new provider.
-
-### Traps
-
-- **productName is the Unity string, not Mortar's id.** Lethal Company is
-  `"Lethal Company"`; the overlay `game` field is `lethal-company`.
-- **Main-thread only.** `Read` runs from `OverlayRunner.Update`. No Unity
-  calls from the HTTP thread.
-- **Do not reference game assemblies.** AGENTS.md: the plugin stays generic.
-
-### Acceptance
-
-- A game build's `Hooks.Overlay` returns a provider; the core build's
-  `Hooks` stays null.
-- In session, `/state` JSON has `inGame` true, `game` set to Mortar's id, and
-  the documented keys; missing fields are absent, not zero.
-- Out of session, snapshot is `{"inGame":false}`.
-- README table lists the new keys. `gate` stays green. No game DLL in the
-  repo.
-
 ## Intro skip steps exist only for Lethal Company
 
 `LethalCompanyHooks.Steps` (`LethalCompanyHooks.cs:15`) names Lethal Company's init scenes.
@@ -110,10 +59,9 @@ disclaimer the player must see.
 Blocked: needs Valheim's `assembly_valheim.dll` or confirmed in-game field names, and no maintainer owns Valheim (NOMAD, 2026-11-05). Pick up only when a Valheim install or a contributor with one is available.
 
 `LethalCompanyHooks.Versions` (`LethalCompanyHooks.cs:23`) has one row:
-`GameNetworkManager.gameVersionNum` formatted `v{0}`. Valheim already has an
-overlay provider, but `status` reports Unity's `Application.version` there
-(`gameVersionSource` `unity`) even when the pause menu shows a different
-number. `Plugin.ReadGameVersion` (`Plugin.cs:155`) already re-reads on scene
+`GameNetworkManager.gameVersionNum` formatted `v{0}`. Valheim has no row, so
+`status` reports Unity's `Application.version` there (`gameVersionSource`
+`unity`) even when the pause menu shows a different number. `Plugin.ReadGameVersion` (`Plugin.cs:155`) already re-reads on scene
 change.
 
 Decided shape: another `GameVersionSource` (type, static instance, field,
