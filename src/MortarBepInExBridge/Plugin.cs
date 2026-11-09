@@ -78,7 +78,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     private static List<ConfigTarget> LoadedConfigs()
     {
         var files = Chainloader.PluginInfos.Values
-            .Select(info => (info.Instance as BaseUnityPlugin)?.Config)
+            .Select(info => info.Instance?.Config)
             .OfType<ConfigFile>()
             .Distinct()
             .ToList();

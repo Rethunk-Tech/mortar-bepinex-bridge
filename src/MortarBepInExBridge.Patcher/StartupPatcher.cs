@@ -191,7 +191,7 @@ public static class StartupPatcher
             .ToDictionary(g => g.Key, g => new PluginId(g.First().Metadata.GUID, g.First().Metadata.Name, g.First().Metadata.Version.ToString()));
         string loader = typeof(Chainloader).Assembly.GetName().Version?.ToString() ?? "";
         Dictionary<string, string> byAssembly = [];
-        foreach (PluginInfo info in Chainloader.PluginInfos.Values.Where(info => (object?)info.Instance is not null))
+        foreach (PluginInfo info in Chainloader.PluginInfos.Values.Where(info => info.Instance is not null))
             byAssembly.TryAdd(info.Instance!.GetType().Assembly.GetName().Name, info.Metadata.GUID);
         Dictionary<string, long> patches = ByPlugin(PatchTiming.Ms(), byAssembly);
         var shares = AppDomain.CurrentDomain.GetData(SharesKey) as Func<Dictionary<string, long>>;

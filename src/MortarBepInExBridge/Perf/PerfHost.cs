@@ -132,7 +132,7 @@ internal sealed class PerfHost : MonoBehaviour
         Dictionary<Assembly, string> assemblies = [];
         // Compared as an object: a plugin whose GameObject a scene load destroyed is still its assembly's plugin.
         foreach (PluginInfo info in Chainloader.PluginInfos.Values
-            .Where(info => info.Metadata.GUID != Plugin.Guid && (object?)info.Instance is not null))
+            .Where(info => info.Metadata.GUID != Plugin.Guid && info.Instance is not null))
             assemblies[info.Instance!.GetType().Assembly] = info.Metadata.GUID;
         this.graph = PatchGraph.Build(Edges(), HarmonyId, a => assemblies.TryGetValue(a, out string? guid) ? guid : null);
         List<(MethodInfo Method, string Plugin)> timed = [.. this.graph.Timed];
