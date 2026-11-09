@@ -32,21 +32,21 @@ jobs:
       - name: shellcheck
         if: ${{ !cancelled() }}
         run: |
-          curl -fsSL -o "$RUNNER_TEMP/shellcheck.tar.xz" https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
+          curl -fsSL --retry 18 --retry-delay 10 -o "$RUNNER_TEMP/shellcheck.tar.xz" https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
           echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  $RUNNER_TEMP/shellcheck.tar.xz" | sha256sum -c -
           tar -xJf "$RUNNER_TEMP/shellcheck.tar.xz" -C "$RUNNER_TEMP"
           "$RUNNER_TEMP/shellcheck-v0.11.0/shellcheck" -x scripts/*.sh
       - name: actionlint
         if: ${{ !cancelled() }}
         run: |
-          curl -fsSL -o "$RUNNER_TEMP/actionlint.tar.gz" https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          curl -fsSL --retry 18 --retry-delay 10 -o "$RUNNER_TEMP/actionlint.tar.gz" https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
           echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
           "$RUNNER_TEMP/actionlint"
       - name: Install gate
         if: ${{ !cancelled() }}
         run: |
-          curl -fsSL -o "$RUNNER_TEMP/gate" https://github.com/Rethunk-Tech/rethunk-gate-cli/releases/download/v0.6.6/gate-linux-amd64
+          curl -fsSL --retry 18 --retry-delay 10 -o "$RUNNER_TEMP/gate" https://github.com/Rethunk-Tech/rethunk-gate-cli/releases/download/v0.6.6/gate-linux-amd64
           echo "4c43aa2bfbcd61c58a01c02f3cb924c76d9062dc8df10f289a22d258ca7267b6  $RUNNER_TEMP/gate" | sha256sum -c -
           chmod +x "$RUNNER_TEMP/gate"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
@@ -105,7 +105,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern "MortarBepInExBridge_*-$version-nexus.zip"
+          n=0
+          until gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber --pattern "MortarBepInExBridge_*-$version-nexus.zip"; do
+            n=$((n + 1))
+            [ "$n" -lt 5 ] || exit 1
+            sleep 10
+          done
           echo "version=$version" >>"$GITHUB_OUTPUT"
       - name: Upload to Nexus Mods (Lethal Company mod 315)
         uses: Nexus-Mods/upload-action@98532f7670c27cbecc78fae03fa3e278147827e2  # v1.0.0-beta.11
@@ -163,11 +168,16 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           zip="$PACKAGE-$version-nexus.zip"
-          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern "$zip"
+          n=0
+          until gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber --pattern "$zip"; do
+            n=$((n + 1))
+            [ "$n" -lt 5 ] || exit 1
+            sleep 10
+          done
           # CurseForge rejects a file byte-identical to one on another project, so each game's copy
           # carries its own archive comment; the extracted files are unchanged.
           printf 'Mortar BepInEx Bridge %s for %s\n' "$version" "$GAME" | zip -z "$zip" >/dev/null
-          curl -fsS --config <(printf 'header = "X-Api-Token: %s"\n' "$CURSEFORGE_TOKEN") "$API/game/versions" >versions.json
+          curl -fsS --retry 18 --retry-delay 10 --config <(printf 'header = "X-Api-Token: %s"\n' "$CURSEFORGE_TOKEN") "$API/game/versions" >versions.json
           # The upload API needs at least one game version, and some games (Valheim) expose none
           # to it: say so and leave that game's upload to the web form.
           if [ "$(python3 -c 'import json; print(len(json.load(open("versions.json"))))')" = 0 ]; then
@@ -180,5 +190,5 @@ jobs:
           print(json.dumps({"changelog": sys.argv[2], "changelogType": "text", "displayName": f"Mortar BepInEx Bridge {sys.argv[1]}", "gameVersions": ids, "releaseType": "release"}))
           PY
           )"
-          curl -fsS --config <(printf 'header = "X-Api-Token: %s"\n' "$CURSEFORGE_TOKEN") \
+          curl -fsS --retry 18 --retry-delay 10 --config <(printf 'header = "X-Api-Token: %s"\n' "$CURSEFORGE_TOKEN") \
             -F "metadata=$metadata" -F "file=@$zip" "$API/projects/$PROJECT/upload-file"
