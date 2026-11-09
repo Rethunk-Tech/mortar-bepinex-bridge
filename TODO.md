@@ -10,7 +10,7 @@ Sections are unordered.
 `IGameHooks.Overlay` (`GameHooks.cs:13`) is what a game build implements.
 Lethal Company and Valheim each return a provider; the core build's
 `BuiltGame.Hooks` is null. Any other BepInEx 5 game that Mortar launches with
-stream overlay on hits `Plugin.StartOverlay` (`Plugin.cs:165`): it logs a
+stream overlay on hits `Plugin.StartOverlay` (`Plugin.cs:179`): it logs a
 warning and leaves the HTTP server off. The command channel still works.
 README's overlay key table (`README.md:86`) lists only those two games.
 
@@ -34,7 +34,7 @@ reflection names) larger than a gap-fill and easy to get wrong.
    `Games/Valheim/ValheimProvider.cs` — the pattern: `Read` returns null out
    of session.
 3. `src/MortarBepInExBridge/Probe.cs` — member/method reads by name.
-4. `src/MortarBepInExBridge/Plugin.cs:178` — warning when the provider is
+4. `src/MortarBepInExBridge/Plugin.cs:192` — warning when the provider is
    null.
 5. `README.md:86` — the key table that ships with a new provider.
 
@@ -76,12 +76,12 @@ disclaimer the player must see.
 
 ### Read
 
-1. `src/MortarBepInExBridge/IntroSkip.cs:10` `IntroMode` — Play / Animations /
+1. `src/MortarBepInExBridge/IntroSkip.cs:9` `IntroMode` — Play / Animations /
    Menu.
 2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyHooks.cs:15`
    `Steps` — Lethal Company only.
-3. `src/MortarBepInExBridge/IntroSkip.cs:64` `For` — scene + mode filter.
-4. `src/MortarBepInExBridge/IntroRunner.cs:72` `OnSceneLoaded` — applies
+3. `src/MortarBepInExBridge/IntroSkip.cs:63` `For` — scene + mode filter.
+4. `src/MortarBepInExBridge/IntroRunner.cs:70` `OnSceneLoaded` — applies
    steps.
 5. `README.md:32` — documents Lethal Company Online/LAN; other games would
    be named here.
@@ -113,7 +113,7 @@ Blocked: needs Valheim's `assembly_valheim.dll` or confirmed in-game field names
 `GameNetworkManager.gameVersionNum` formatted `v{0}`. Valheim already has an
 overlay provider, but `status` reports Unity's `Application.version` there
 (`gameVersionSource` `unity`) even when the pause menu shows a different
-number. `Plugin.ReadGameVersion` (`Plugin.cs:141`) already re-reads on scene
+number. `Plugin.ReadGameVersion` (`Plugin.cs:155`) already re-reads on scene
 change.
 
 Decided shape: another `GameVersionSource` (type, static instance, field,
