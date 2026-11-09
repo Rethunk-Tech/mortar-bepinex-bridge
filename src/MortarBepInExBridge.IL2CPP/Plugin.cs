@@ -34,7 +34,7 @@ public sealed class Plugin : BasePlugin, IGameView
 
     string IGameView.ConfigSync() => "[]";
 
-    ConfigReloadResult? IGameView.ConfigReload(string name) => null;
+    ConfigReloadResult? IGameView.ConfigReload(string file) => null;
 
     public override void Load()
     {
