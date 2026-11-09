@@ -13,6 +13,8 @@ public class ProtocolTests
         public string Scene => "SampleSceneRelay";
         public IReadOnlyList<PluginRow> Plugins { get; } = [new("a.b", "A \"quoted\"", "1.2.3"), new("c.d", "C", "0.1.0", "Pack-C/c.dll")];
 
+        public IReadOnlyList<string> Features { get; } = ["introskip", "console", "configsync", "perf", "logtags", "patcher"];
+
         public string Perf(bool start) => start ? "{\"started\":1}" : "{\"frames\":2}";
 
         public bool PerfStop() => true;
@@ -39,7 +41,7 @@ public class ProtocolTests
     [Theory]
     [InlineData("ping", "ok")]
     [InlineData(" PING ", "ok")]
-    [InlineData("status", "ok {\"gameVersion\":\"v62\",\"gameVersionSource\":\"game\",\"scene\":\"SampleSceneRelay\",\"plugins\":[{\"guid\":\"a.b\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"version\":\"0.1.0\",\"location\":\"Pack-C/c.dll\"}]}")]
+    [InlineData("status", "ok {\"gameVersion\":\"v62\",\"gameVersionSource\":\"game\",\"scene\":\"SampleSceneRelay\",\"features\":[\"introskip\",\"console\",\"configsync\",\"perf\",\"logtags\",\"patcher\"],\"plugins\":[{\"guid\":\"a.b\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"version\":\"0.1.0\",\"location\":\"Pack-C/c.dll\"}]}")]
     [InlineData("plugins", "ok [{\"guid\":\"a.b\",\"name\":\"A \\\"quoted\\\"\",\"version\":\"1.2.3\"},{\"guid\":\"c.d\",\"name\":\"C\",\"version\":\"0.1.0\",\"location\":\"Pack-C/c.dll\"}]")]
     [InlineData("perf", "ok {\"frames\":2}")]
     [InlineData("PERF START", "ok {\"started\":1}")]
@@ -63,7 +65,7 @@ public class ProtocolTests
     {
         var game = new UnityGame();
         Assert.Equal(
-            "ok {\"gameVersion\":\"2022.3.9\",\"gameVersionSource\":\"unity\",\"scene\":\"MainMenu\",\"plugins\":[]}",
+            "ok {\"gameVersion\":\"2022.3.9\",\"gameVersionSource\":\"unity\",\"scene\":\"MainMenu\",\"features\":[],\"plugins\":[]}",
             Protocol.Handle("status", game));
     }
 
@@ -73,6 +75,8 @@ public class ProtocolTests
         public bool GameVersionIsGames => false;
         public string Scene => "MainMenu";
         public IReadOnlyList<PluginRow> Plugins { get; } = [];
+
+        public IReadOnlyList<string> Features { get; } = [];
 
         public string Perf(bool start) => "{}";
 

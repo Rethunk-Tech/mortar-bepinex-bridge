@@ -26,6 +26,10 @@ public sealed class Plugin : BasePlugin, IGameView
 
     IReadOnlyList<PluginRow> IGameView.Plugins => Loaded();
 
+    // IL2CPP has no UnityEngine here, so no intro skip, console, log tags or startup patcher; configsync and perf stay
+    // empty for the same reason.
+    IReadOnlyList<string> IGameView.Features => [];
+
     string IGameView.Perf(bool start) => "{}";
 
     bool IGameView.PerfStop() => false;

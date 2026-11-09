@@ -49,6 +49,9 @@ internal interface IGameView
     string Scene { get; }
     IReadOnlyList<PluginRow> Plugins { get; }
 
+    /// <summary>What this build serves, by the names in <see cref="Protocol.Features"/>.</summary>
+    IReadOnlyList<string> Features { get; }
+
     /// <summary>The in-game performance summary as JSON; start restarts its window first.</summary>
     string Perf(bool start);
 
@@ -70,6 +73,13 @@ internal static class Protocol
 {
     public const int MaxCommandBytes = 4096;
     public const int MaxTokenBytes = 128;
+
+    /// <summary>
+    /// What this build serves. A companion from before the key serves exactly these (0.5.x), so Mortar reads a missing
+    /// <c>features</c> as this set: the key rides on <c>status</c> because an old Mortar ignores keys it does not know,
+    /// while a new command would be answered "unknown command" by an old companion (Mortar's allowlist).
+    /// </summary>
+    public static readonly IReadOnlyList<string> Features = ["introskip", "console", "configsync", "perf", "logtags", "patcher"];
 
     public static bool TokenMatches(string expected, string? provided)
     {
@@ -125,6 +135,7 @@ internal static class Protocol
                     + "\"gameVersion\":" + Json.Quote(game.GameVersion)
                     + ",\"gameVersionSource\":" + Json.Quote(game.GameVersionIsGames ? "game" : "unity")
                     + ",\"scene\":" + Json.Quote(game.Scene)
+                    + ",\"features\":" + FeatureList(game.Features)
                     + ",\"plugins\":" + PluginList(game.Plugins, withName: false) + "}";
             case "plugins":
                 return "ok " + PluginList(game.Plugins, withName: true);
@@ -147,6 +158,18 @@ internal static class Protocol
             default:
                 return "error: unknown command " + Json.Quote(name) + "; try ping, status, plugins, perf, perf start, perf stop, configsync, config reload <file> or console <line>";
         }
+    }
+
+    private static string FeatureList(IReadOnlyList<string> features)
+    {
+        var sb = new StringBuilder("[");
+        for (int i = 0; i < features.Count; i++)
+        {
+            if (i > 0)
+                sb.Append(',');
+            sb.Append(Json.Quote(features[i]));
+        }
+        return sb.Append(']').ToString();
     }
 
     private static string PluginList(IReadOnlyList<PluginRow> plugins, bool withName)

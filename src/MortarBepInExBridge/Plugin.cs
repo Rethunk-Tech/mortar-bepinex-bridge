@@ -45,6 +45,8 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     IReadOnlyList<PluginRow> IGameView.Plugins => Loaded();
 
+    IReadOnlyList<string> IGameView.Features => Protocol.Features;
+
     string IGameView.Perf(bool start) => PerfHost.Reply(start);
 
     bool IGameView.PerfStop() => PerfHost.Stop();
