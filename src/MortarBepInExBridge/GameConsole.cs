@@ -50,7 +50,7 @@ internal sealed class ReflectionConsole(Func<Type?> type, string instanceMember,
             {
                 return (ex.InnerException ?? ex).Message;
             }
-            next:;
+        next:;
         }
         return $"the game's console has no {method}(string) method";
     }
