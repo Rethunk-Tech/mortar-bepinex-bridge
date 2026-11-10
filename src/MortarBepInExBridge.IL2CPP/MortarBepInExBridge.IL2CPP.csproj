@@ -3,7 +3,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>MortarBepInExBridge.IL2CPP</AssemblyName>
     <RootNamespace>MortarBepInExBridge</RootNamespace>
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
