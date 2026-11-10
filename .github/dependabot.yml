@@ -13,12 +13,10 @@ updates:
   - package-ecosystem: nuget
     registries: [bepinex, nuget-org]
     directory: /src/MortarBepInExBridge
-    # Mirrors the .repo-ops.toml holds so Dependabot opens no PR a sweep can never supersede.
+    # NuGet ignores do not honor version ranges (those are npm/pip/bundler only).
     ignore:
       - dependency-name: "BepInEx.Core"
-        versions: [">= 6"]
-      - dependency-name: "UnityEngine.Modules"
-        versions: [">= 2023"]
+        update-types: ["version-update:semver-major"]
     schedule:
       interval: weekly
       day: monday
@@ -45,14 +43,11 @@ updates:
   - package-ecosystem: nuget
     registries: [bepinex, nuget-org]
     directory: /src/MortarBepInExBridge.Patcher
-    # Mirrors the .repo-ops.toml holds so Dependabot opens no PR a sweep can never supersede.
+    # NuGet ignores do not honor version ranges (those are npm/pip/bundler only).
     ignore:
       - dependency-name: "BepInEx.BaseLib"
-        versions: [">= 6"]
+        update-types: ["version-update:semver-major"]
       - dependency-name: "Mono.Cecil"
-        versions: ["> 0.10.4"]
-      - dependency-name: "UnityEngine.Modules"
-        versions: [">= 2023"]
     schedule:
       interval: weekly
       day: monday

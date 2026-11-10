@@ -84,7 +84,7 @@ internal sealed class IntroRunner : MonoBehaviour
         Type? type = Probe.Find(step.Type);
         if (type == null)
             yield break;
-        foreach (UnityEngine.Object target in FindObjectsOfType(type))
+        foreach (UnityEngine.Object target in FindObjectsByType(type))
         {
             IntroSkip.Apply(target, step);
             this.log?.LogInfo($"Intro skip: {step.Type} in {step.Scene}.");

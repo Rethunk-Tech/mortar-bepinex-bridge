@@ -1,9 +1,4 @@
 [[hold]]
-package = "UnityEngine.Modules"
-max_version = "2022.3"
-reason = "reference assemblies stand in for the oldest Unity runtime the BepInEx 5 games ship; Unity 6 APIs are missing in those games"
-
-[[hold]]
 package = "Mono.Cecil"
 max_version = "0.10.4"
 reason = "the BepInExPack ships Mono.Cecil 0.10.4 and the patcher's Patch signature binds to it"

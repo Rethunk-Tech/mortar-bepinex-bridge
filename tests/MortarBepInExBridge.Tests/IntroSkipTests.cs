@@ -52,6 +52,19 @@ public class IntroSkipTests
     }
 
     [Fact]
+    public void SceneStepsFindObjectsWithoutTheObsoleteUnityLookup()
+    {
+        DirectoryInfo? dir = new(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Join(dir.FullName, "MortarBepInExBridge.slnx")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        string intro = File.ReadAllText(Path.Join(dir.FullName, "src/MortarBepInExBridge/IntroRunner.cs"));
+        Assert.Contains("FindObjectsByType(type)", intro);
+        Assert.DoesNotContain("FindObjectsOfType", intro);
+        Assert.DoesNotContain("FindObjectsSortMode", intro);
+    }
+
+    [Fact]
     public void FindCachesAMissSoLaterScenesDoNotWalkTheDomainAgain()
     {
         Assert.Null(Probe.Find("MortarBepInExBridge.NoSuchTypeInThisProcess"));
