@@ -13,10 +13,13 @@ internal sealed class ConfigTarget(string path, Action reload)
 }
 
 /// <summary>What a <c>config reload</c> did: files reloaded, and one message per file whose reload threw.</summary>
-internal sealed class ConfigReloadResult(int reloaded, IReadOnlyList<string> failures)
+internal sealed class ConfigReloadResult(int reloaded, IReadOnlyList<string> failures, string? error = null)
 {
     public int Reloaded { get; } = reloaded;
     public IReadOnlyList<string> Failures { get; } = failures;
+    public string? Error { get; } = error;
+
+    public static ConfigReloadResult Fail(string error) => new(0, [], error);
 }
 
 internal static class ConfigReload
@@ -63,7 +66,9 @@ internal static class ConfigReload
     }
 
     public static string Reply(ConfigReloadResult result) =>
-        result.Failures.Count == 0
-            ? $"ok reloaded {result.Reloaded}"
-            : $"ok reloaded {result.Reloaded}, failed {result.Failures.Count}: {string.Join("; ", result.Failures)}";
+        result.Error != null
+            ? "error: " + result.Error.Replace('\n', ' ').Replace('\r', ' ')
+            : result.Failures.Count == 0
+                ? $"ok reloaded {result.Reloaded}"
+                : $"ok reloaded {result.Reloaded}, failed {result.Failures.Count}: {string.Join("; ", result.Failures)}";
 }

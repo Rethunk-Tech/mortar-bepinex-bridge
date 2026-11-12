@@ -26,7 +26,7 @@ public class ProtocolTests
         public ConfigReloadResult? ConfigReload(string name)
         {
             this.Reloads.Add(name);
-            return new(1, []);
+            return name == "throw.cfg" ? ConfigReloadResult.Fail("bad ConfigFilePath\nsecond") : new(1, []);
         }
 
         public List<string> Ran { get; } = [];
@@ -121,6 +121,9 @@ public class ProtocolTests
         Assert.StartsWith("error: config reload only takes .cfg", Protocol.Handle("config reload a.json", game));
         Assert.Single(game.Reloads);
         Assert.StartsWith("error: the game did not run", Protocol.Handle("config reload a.cfg", new UnityGame()));
+        string thrown = Protocol.Handle("config reload throw.cfg", game);
+        Assert.Contains("bad ConfigFilePath", thrown);
+        Assert.DoesNotContain("did not run", thrown);
     }
 
     [Fact]

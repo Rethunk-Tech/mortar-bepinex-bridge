@@ -71,7 +71,11 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
             result = ConfigReload.Run(Paths.ConfigPath, file, LoadedConfigs());
             return null;
         }, ConfigReloadWaitMs);
-        return failure == null ? result : null;
+        if (failure == null)
+            return result;
+        if (failure == "the game did not run the command in time")
+            return null;
+        return ConfigReloadResult.Fail(failure);
     }
 
     // A ConfigFile shared by several plugins appears once.
