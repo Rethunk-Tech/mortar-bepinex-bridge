@@ -64,6 +64,7 @@ internal sealed class MainThreadQueue
         public readonly Func<string?> Work = work;
         public readonly ManualResetEventSlim Done = new(false);
         public string? Result;
+        public int Claimed;
     }
 
     private readonly ConcurrentQueue<Job> Pending = new();
@@ -73,7 +74,12 @@ internal sealed class MainThreadQueue
     {
         var job = new Job(work);
         this.Pending.Enqueue(job);
-        return job.Done.Wait(timeoutMs) ? job.Result : "the game did not run the command in time";
+        if (job.Done.Wait(timeoutMs))
+            return job.Result;
+        if (Interlocked.CompareExchange(ref job.Claimed, 1, 0) == 0)
+            return "the game did not run the command in time";
+        job.Done.Wait();
+        return job.Result;
     }
 
     /// <summary>Runs what is queued; the main thread calls it every frame.</summary>
@@ -81,6 +87,8 @@ internal sealed class MainThreadQueue
     {
         while (this.Pending.TryDequeue(out Job? job))
         {
+            if (Interlocked.CompareExchange(ref job.Claimed, 1, 0) != 0)
+                continue;
             try
             {
                 job.Result = job.Work();

@@ -49,8 +49,10 @@ public class GameConsoleTests
     public void TheMainThreadRunsQueuedWorkAndTimesOutWithoutOne()
     {
         var queue = new MainThreadQueue();
-        Assert.Equal("the game did not run the command in time", queue.Invoke(() => null, 20));
+        var ran = 0;
+        Assert.Equal("the game did not run the command in time", queue.Invoke(() => { ran++; return null; }, 20));
         queue.Drain();
+        Assert.Equal(0, ran);
 
         string? result = "unset";
         var caller = new Thread(() => result = queue.Invoke(() => "from main", 5000));
