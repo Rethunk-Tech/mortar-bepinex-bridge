@@ -22,6 +22,25 @@ public class StartupPatcherTests
     }
 
     [Fact]
+    public void ConsumeRequestLeavesAFileItCouldNotRead()
+    {
+        string dir = Path.Join(Path.GetTempPath(), "mortar-measure-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        string path = Path.Join(dir, ".measure-launch");
+        try
+        {
+            File.WriteAllBytes(path, new byte[Files.MaxTextBytes + 1]);
+            Assert.Null(StartupPatcher.ConsumeRequest(path, out string? error));
+            Assert.False(string.IsNullOrEmpty(error));
+            Assert.True(File.Exists(path));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TitleFromRequestKeepsTheFirstLineAndCapsIt()
     {
         Assert.Equal("MainMenu", StartupPatcher.TitleFromRequest("  MainMenu\nTiming is off\n"));

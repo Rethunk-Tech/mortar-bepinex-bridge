@@ -51,10 +51,9 @@ public static class StartupPatcher
             // BepInEx's root is the profile's BepInEx folder; the profile folder above it holds Mortar's startup folder.
             startupDir = Path.Join(Path.GetDirectoryName(Paths.BepInExRootPath) ?? "", "startup");
             string request = Path.Join(startupDir, MeasureFile);
-            string? text = Files.ReadText(request, out string? error);
+            string? text = ConsumeRequest(request, out string? error);
             if (text == null && error == null)
                 return;
-            File.Delete(request);
             if (error != null)
             {
                 Log.LogWarning($"Could not read {MeasureFile}: {error}");
@@ -81,6 +80,14 @@ public static class StartupPatcher
 
     /// <summary>The title scene Mortar asked for: the first line, trimmed, capped so a request file cannot fill logs
     /// or wait on an unbounded name.</summary>
+    internal static string? ConsumeRequest(string request, out string? error)
+    {
+        string? text = Files.ReadText(request, out error);
+        if (error == null && text != null)
+            File.Delete(request);
+        return text;
+    }
+
     internal static string TitleFromRequest(string text)
     {
         string title = text.Trim();
