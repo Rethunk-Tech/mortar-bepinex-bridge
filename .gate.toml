@@ -1,5 +1,15 @@
+# A killed dotnet process leaves its debug pipes and diagnostic socket in TMPDIR, and reused MSBuild nodes outlive the
+# run, so every dotnet gate turns both off.
+
 # verify.sh builds the one DLL and runs the suite against it; gate does not run its detected test step beside a declared
 # build. CI restores with --locked-mode, so a drifted packages.lock.json fails there; the detected build restores unlocked
 # and would pass it.
 [gates.build]
 run = "scripts/verify.sh"
+env = { DOTNET_EnableDiagnostics = "0", MSBUILDDISABLENODEREUSE = "1" }
+
+[gates.format]
+env = { DOTNET_EnableDiagnostics = "0", MSBUILDDISABLENODEREUSE = "1" }
+
+[gates.test]
+env = { DOTNET_EnableDiagnostics = "0", MSBUILDDISABLENODEREUSE = "1" }
