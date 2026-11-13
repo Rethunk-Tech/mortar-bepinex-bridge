@@ -38,6 +38,16 @@ public class IntroSkipTests
         Assert.Equal(typeof(IntroSkip), Probe.Find("MortarBepInExBridge.IntroSkip"));
         IntroSkip.Apply(new object(), Steps[0]);
     }
+
+    [Fact]
+    public void FindLateFindsATypeWhoseAssemblyLoadsAfterAMiss()
+    {
+        string name = "LateLoaded" + System.Guid.NewGuid().ToString("N");
+        Assert.Null(Probe.FindLate(name));
+        var assembly = System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName(name), System.Reflection.Emit.AssemblyBuilderAccess.Run);
+        assembly.DefineDynamicModule(name).DefineType(name, System.Reflection.TypeAttributes.Public).CreateType();
+        Assert.NotNull(Probe.FindLate(name));
+    }
     [Fact]
     public void PluginLogsAliveAfterEachSceneForBisect()
     {

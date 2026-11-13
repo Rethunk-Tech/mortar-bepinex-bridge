@@ -19,10 +19,18 @@ internal static class Probe
     {
         if (Types.TryGetValue(name, out Type? found))
             return found;
-        found = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
+        found = Scan(name);
         Types.TryAdd(name, found);
         return found;
     }
+
+    /// <summary>As <see cref="Find"/>, but a miss is looked up again next time: for a type a plugin brings, since plugin
+    /// assemblies load one by one after the bridge has started answering.</summary>
+    public static Type? FindLate(string name) =>
+        Types.TryGetValue(name, out Type? found) && found != null ? found : Types[name] = Scan(name);
+
+    private static Type? Scan(string name) =>
+        AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(name, false)).FirstOrDefault(t => t != null);
 
     public static object? Static(Type? type, string name) => type == null ? null : Read(type, null, name);
 

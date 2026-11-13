@@ -48,7 +48,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
 
     bool IGameView.PerfStop() => PerfHost.Stop();
 
-    string IGameView.ConfigSync() => ConfigSyncValues.Read(Probe.Find);
+    string IGameView.ConfigSync() => ConfigSyncValues.Read(Probe.FindLate);
 
     private const int ConsoleWaitMs = 2000;
     private const int ConfigReloadWaitMs = 5000;
