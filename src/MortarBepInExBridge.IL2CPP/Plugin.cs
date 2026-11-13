@@ -17,6 +17,7 @@ public sealed class Plugin : BasePlugin, IGameView
 
     private BridgeServer? Server;
     private string? StatePath;
+    private string? StateContents;
 
     string IGameView.GameVersion => "";
 
@@ -52,7 +53,8 @@ public sealed class Plugin : BasePlugin, IGameView
         this.Server.Start();
         try
         {
-            Files.AtomicWrite(this.StatePath, $"{{\"port\":{this.Server.Port},\"token\":\"{token}\"}}");
+            this.StateContents = $"{{\"port\":{this.Server.Port},\"token\":\"{token}\"}}";
+            Files.AtomicWrite(this.StatePath, this.StateContents);
         }
         catch
         {
@@ -71,7 +73,7 @@ public sealed class Plugin : BasePlugin, IGameView
         this.Server = null;
         if (this.StatePath != null)
         {
-            if (Files.TryDelete(this.StatePath) is { } error)
+            if (this.StateContents != null && Files.DeleteIfUnchanged(this.StatePath, this.StateContents) is { } error)
                 this.Log.LogWarning($"Could not remove {StateFileName}: {error}");
             this.StatePath = null;
         }

@@ -29,6 +29,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
     // rather than made and released around one hook call.
     private readonly Harmony VersionPatches = new(Guid + ".version");
     private string? StatePath;
+    private string? StateContents;
     private volatile string GameVersionValue = "";
     private volatile bool GameVersionIsGames;
     // Unity objects are main-thread only, so the socket threads read this copy, which the scene event keeps current.
@@ -138,7 +139,8 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         this.Server.Start();
         try
         {
-            Files.AtomicWrite(this.StatePath, $"{{\"port\":{this.Server.Port},\"token\":\"{token}\"}}");
+            this.StateContents = $"{{\"port\":{this.Server.Port},\"token\":\"{token}\"}}";
+            Files.AtomicWrite(this.StatePath, this.StateContents);
         }
         catch
         {
@@ -172,7 +174,7 @@ public sealed class Plugin : BaseUnityPlugin, IGameView
         this.Server = null;
         if (this.StatePath != null)
         {
-            if (Files.TryDelete(this.StatePath) is { } error)
+            if (this.StateContents != null && Files.DeleteIfUnchanged(this.StatePath, this.StateContents) is { } error)
                 this.Logger.LogWarning($"Could not remove {StateFileName}: {error}");
             this.StatePath = null;
         }

@@ -57,6 +57,15 @@ internal static class Files
         }
     }
 
+    /// <summary>Removes the file only while it still holds <paramref name="contents"/>: a second game instance may have rewritten it with its own port and token. Null when done; otherwise the failure.</summary>
+    internal static string? DeleteIfUnchanged(string path, string contents)
+    {
+        string? current = ReadText(path, out string? error);
+        if (error != null)
+            return error;
+        return current == contents ? TryDelete(path) : null;
+    }
+
     /// <summary>Null when the path is gone or was removed; otherwise the failure.</summary>
     internal static string? TryDelete(string path)
     {
