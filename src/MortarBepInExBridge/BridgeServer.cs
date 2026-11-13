@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -14,6 +15,7 @@ internal sealed class BridgeServer(string token, Func<string, string> handle) : 
     private const int ClientTimeoutMs = 5000;
     internal const int MaxClients = 8;
     internal const int UnauthTimeoutMs = 250;
+    internal const int TokenDeadlineMs = 1000;
 
     private readonly TcpListener Listener = new(IPAddress.Loopback, 0);
     private readonly string Token = token;
@@ -95,20 +97,33 @@ internal sealed class BridgeServer(string token, Func<string, string> handle) : 
 
     private string Process(TcpClient client, Stream stream)
     {
-        if (!Protocol.TokenMatches(this.Token, ReadLine(stream, Protocol.MaxTokenBytes)))
+        if (!Protocol.TokenMatches(this.Token, ReadLine(stream, Protocol.MaxTokenBytes, TokenDeadlineMs)))
             return "error: unauthorized";
         client.ReceiveTimeout = ClientTimeoutMs;
-        string? line = ReadLine(stream, Protocol.MaxCommandBytes);
-        return line == null ? "error: missing or oversized command" : this.HandleLine(line);
+        string? line = ReadLine(stream, Protocol.MaxCommandBytes, ClientTimeoutMs);
+        if (line == null)
+            return "error: missing or oversized command";
+        try
+        {
+            return this.HandleLine(line);
+        }
+        catch (Exception ex)
+        {
+            // An exception escaping a pool thread ends the game process; a failed query only fails its own reply.
+            return "error: " + ex.Message.Replace('\n', ' ').Replace('\r', ' ');
+        }
     }
 
-    /// <summary>Read one newline-terminated line of at most <paramref name="max"/> bytes; null when the peer stops early or sends more.</summary>
-    internal static string? ReadLine(Stream stream, int max)
+    /// <summary>Read one newline-terminated line of at most <paramref name="max"/> bytes within <paramref name="deadlineMs"/>; null when the peer stops early, sends more or trickles bytes past the deadline.</summary>
+    internal static string? ReadLine(Stream stream, int max, int deadlineMs)
     {
         var bytes = new List<byte>();
+        var clock = Stopwatch.StartNew();
         int b;
         while ((b = stream.ReadByte()) >= 0)
         {
+            if (clock.ElapsedMilliseconds > deadlineMs)
+                return null;
             if (b == '\n')
                 return Encoding.UTF8.GetString([.. bytes]).TrimEnd('\r');
             if (bytes.Count >= max)

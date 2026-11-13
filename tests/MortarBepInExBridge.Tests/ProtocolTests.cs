@@ -136,10 +136,10 @@ public class ProtocolTests
         Assert.False(Protocol.TokenMatches("abc", "abcd"));
         Assert.False(Protocol.TokenMatches("abc", ""));
         using var ping = new MemoryStream(Encoding.UTF8.GetBytes("ping\r\n"));
-        Assert.Equal("ping", BridgeServer.ReadLine(ping, 16));
+        Assert.Equal("ping", BridgeServer.ReadLine(ping, 16, 5000));
         using var tooLong = new MemoryStream(Encoding.UTF8.GetBytes("pingping\n"));
-        Assert.Null(BridgeServer.ReadLine(tooLong, 4));
+        Assert.Null(BridgeServer.ReadLine(tooLong, 4, 5000));
         using var noNl = new MemoryStream(Encoding.UTF8.GetBytes("no newline"));
-        Assert.Null(BridgeServer.ReadLine(noNl, 64));
+        Assert.Null(BridgeServer.ReadLine(noNl, 64, 5000));
     }
 }

@@ -84,4 +84,28 @@ public class BridgeServerTests
         string reply = Exchange(server, "secret\n" + new string('x', Protocol.MaxCommandBytes + 10) + "\n");
         Assert.Equal("error: missing or oversized command", reply);
     }
+
+    [Fact]
+    public void ThrowingHandlerAnswersAnErrorAndKeepsServing()
+    {
+        using var server = Started(line => line == "boom" ? throw new InvalidOperationException("collection changed") : "ok");
+        Assert.Equal("error: collection changed", Exchange(server, "secret\nboom\n"));
+        Assert.Equal("ok", Exchange(server, "secret\nping\n"));
+    }
+
+    [Fact]
+    public void TrickledLineIsRefusedAtTheDeadline()
+    {
+        var slow = new TrickleStream("abc\n"u8.ToArray(), 60);
+        Assert.Null(BridgeServer.ReadLine(slow, 16, 100));
+    }
+
+    private sealed class TrickleStream(byte[] data, int delayMs) : MemoryStream(data)
+    {
+        public override int ReadByte()
+        {
+            Thread.Sleep(delayMs);
+            return base.ReadByte();
+        }
+    }
 }
