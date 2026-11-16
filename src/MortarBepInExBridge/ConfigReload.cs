@@ -29,6 +29,8 @@ internal static class ConfigReload
     {
         if (name.Length == 0)
             return "config reload needs a config file name";
+        if (name.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+            return "config reload does not take invalid path characters";
         if (name.StartsWith('/') || name.StartsWith('\\') || Path.IsPathRooted(name) || name.Length >= 2 && name[1] == ':')
             return "config reload needs a path below the config folder, not a rooted one";
         foreach (string part in name.Split('/', '\\'))

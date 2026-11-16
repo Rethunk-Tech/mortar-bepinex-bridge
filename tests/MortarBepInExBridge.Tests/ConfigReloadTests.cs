@@ -24,6 +24,10 @@ public class ConfigReloadTests
     [InlineData("a.cfg.bak")]
     public void RefusesAnythingElse(string name) => Assert.NotNull(ConfigReload.Validate(name));
 
+    [Fact]
+    public void RejectsNulInTheName() =>
+        Assert.Equal("config reload does not take invalid path characters", ConfigReload.Validate("a\0.cfg"));
+
     [Theory]
     [InlineData("/g/BepInEx/config", "a.cfg", "/g/BepInEx/config/a.cfg", true)]
     [InlineData("/g/BepInEx/config/", "Sub/a.cfg", "/g/BepInEx/config/Sub/A.CFG", true)]
