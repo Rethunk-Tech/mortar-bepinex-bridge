@@ -84,7 +84,10 @@ internal sealed class IntroRunner : MonoBehaviour
         Type? type = Probe.Find(step.Type);
         if (type == null)
             yield break;
-        foreach (UnityEngine.Object target in FindObjectsByType(type))
+        // The single-argument overload is Unity 6 only; Lethal Company is on 2022.3, which has just the sort-mode one.
+#pragma warning disable CS0618 // obsolete in Unity 6, the only overload the games the plugin serves have
+        foreach (UnityEngine.Object target in FindObjectsByType(type, FindObjectsSortMode.None))
+#pragma warning restore CS0618
         {
             IntroSkip.Apply(target, step);
             this.log?.LogInfo($"Intro skip: {step.Type} in {step.Scene}.");
