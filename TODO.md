@@ -7,7 +7,7 @@ Sections are unordered.
 
 ## Intro skip steps exist only for Lethal Company
 
-`LethalCompanyHooks.Steps` (`LethalCompanyHooks.cs:15`) names Lethal Company's init scenes.
+`LethalCompanyHooks.Steps` (`LethalCompanyHooks.cs:14`) names Lethal Company's init scenes.
 `IntroSkip.For` still runs in every game, and `SplashStop` still asks Unity to
 end its own splash (any engine that has that API). Valheim and other titles
 keep their own boot UI: Mortar's `startup/skip-intro` and `MORTAR_SKIP_INTRO=1`
@@ -27,7 +27,7 @@ disclaimer the player must see.
 
 1. `src/MortarBepInExBridge/IntroSkip.cs:9` `IntroMode` — Play / Animations /
    Menu.
-2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyHooks.cs:15`
+2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyHooks.cs:14`
    `Steps` — Lethal Company only.
 3. `src/MortarBepInExBridge/IntroSkip.cs:63` `For` — scene + mode filter.
 4. `src/MortarBepInExBridge/IntroRunner.cs:70` `OnSceneLoaded` — applies
@@ -58,10 +58,10 @@ disclaimer the player must see.
 
 Blocked: needs Valheim's `assembly_valheim.dll` or confirmed in-game field names, and no maintainer owns Valheim (NOMAD, 2026-11-05). Pick up only when a Valheim install or a contributor with one is available.
 
-`LethalCompanyHooks.Versions` (`LethalCompanyHooks.cs:23`) has one row:
+`LethalCompanyHooks.Versions` (`LethalCompanyHooks.cs:22`) has one row:
 `GameNetworkManager.gameVersionNum` formatted `v{0}`. Valheim has no row, so
 `status` reports Unity's `Application.version` there (`gameVersionSource`
-`unity`) even when the pause menu shows a different number. `Plugin.ReadGameVersion` (`Plugin.cs:155`) already re-reads on scene
+`unity`) even when the pause menu shows a different number. `Plugin.ReadGameVersion` (`Plugin.cs:154`) already re-reads on scene
 change.
 
 Decided shape: another `GameVersionSource` (type, static instance, field,
@@ -79,7 +79,7 @@ be confirmed in-game; a wrong field is worse than `unity`.
 
 1. `src/MortarBepInExBridge/GameVersion.cs:12` `GameVersionSource` — the
    five strings a new row fills.
-2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyHooks.cs:23`
+2. `src/MortarBepInExBridge/Games/LethalCompany/LethalCompanyHooks.cs:22`
    `Versions` — Lethal Company only.
 3. `src/MortarBepInExBridge/GameVersion.cs:39` `Hook` — patches start-up.
 4. `src/MortarBepInExBridge/GameVersion.cs:71` `Read` — hooked value, else
