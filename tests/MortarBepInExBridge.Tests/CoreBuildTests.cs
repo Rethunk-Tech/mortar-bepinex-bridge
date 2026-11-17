@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using Xunit;
@@ -65,5 +66,9 @@ public class CoreBuildTests
     {
         Assert.Equal("MortarBepInExBridge", typeof(Probe).Namespace);
         Assert.Null(typeof(IntroSkip).GetMethod(nameof(Probe.Find)));
+        const BindingFlags declared = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        Assert.Null(typeof(Probe).GetMethod("Member", declared));
+        Assert.Null(typeof(Probe).GetMethod("Call", declared));
+        Assert.Null(typeof(Probe).GetMethod("Int", declared));
     }
 }

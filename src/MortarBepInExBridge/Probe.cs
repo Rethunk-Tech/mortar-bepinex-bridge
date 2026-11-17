@@ -34,31 +34,6 @@ internal static class Probe
 
     public static object? Static(Type? type, string name) => type == null ? null : Read(type, null, name);
 
-    public static object? Member(object? target, string name) => target == null ? null : Read(target.GetType(), target, name);
-
-    /// <summary>The result of a parameterless method, or null.</summary>
-    public static object? Call(object? target, string name)
-    {
-        if (target == null)
-            return null;
-        MethodInfo? method = target.GetType().GetMethod(name, Any, null, Type.EmptyTypes, null);
-        return method?.Invoke(method.IsStatic ? null : target, null);
-    }
-
-    public static int? Int(object? value) => value switch
-    {
-        int i => i,
-        uint u => (int)u,
-        long l => (int)l,
-        short s => s,
-        ushort us => us,
-        byte b => b,
-        sbyte sb => sb,
-        float f => (int)f,
-        double d => (int)d,
-        _ => null,
-    };
-
     private static object? Read(Type type, object? target, string name)
     {
         for (Type? t = type; t != null; t = t.BaseType)
