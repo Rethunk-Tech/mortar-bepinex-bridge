@@ -189,3 +189,21 @@ jobs:
           )"
           curl -fsS --retry 18 --retry-delay 10 --config <(printf 'header = "X-Api-Token: %s"\n' "$CURSEFORGE_TOKEN") \
             -F "metadata=$metadata" -F "file=@$zip" "$API/projects/$PROJECT/upload-file"
+
+  # One required check for branch protection to point at.
+  all-checks:
+    if: always()
+    needs: [build, release, nexus, curseforge]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail if any check did not succeed
+        run: |
+          if { [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ]; } \
+            || { [ "${{ needs.release.result }}" != "success" ] && [ "${{ needs.release.result }}" != "skipped" ]; } \
+            || { [ "${{ needs.nexus.result }}" != "success" ] && [ "${{ needs.nexus.result }}" != "skipped" ]; } \
+            || { [ "${{ needs.curseforge.result }}" != "success" ] && [ "${{ needs.curseforge.result }}" != "skipped" ]; }; then
+            echo "build=${{ needs.build.result }} release=${{ needs.release.result }} nexus=${{ needs.nexus.result }} curseforge=${{ needs.curseforge.result }}"
+            exit 1
+          fi
+          echo "all checks passed"
