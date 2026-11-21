@@ -35,14 +35,14 @@ internal static class Files
         }
     }
 
-    // The temp file is restricted while still empty, so the token is never readable by others.
+    // The temp file is created owner-only (0600 at open on Unix, restricted while still empty on Windows), so the token
+    // is never readable by others.
     internal static void AtomicWrite(string path, string contents)
     {
         string temp = path + ".tmp";
-        File.WriteAllText(temp, "");
         try
         {
-            Restrict(temp);
+            CreateOwnerOnly(temp);
             File.WriteAllText(temp, contents);
             if (File.Exists(path))
                 File.Replace(temp, path, null);
@@ -85,12 +85,23 @@ internal static class Files
     }
 
     // Unix mode bits, or a protected DACL for the current user on Windows (including Proton).
-    private static void Restrict(string path)
+    private static void CreateOwnerOnly(string path)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            File.WriteAllText(path, "");
             RestrictWindows(path);
-        else if (chmod(path, 0x180) != 0)
-            throw new IOException($"Could not restrict permissions on {path}.");
+            return;
+        }
+
+        // A temp file left by a crashed write would make the exclusive create fail.
+        File.Delete(path);
+        // O_WRONLY|O_CREAT|O_EXCL: never follows a final symlink and creates the file 0600 from the first byte.
+        int flags = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1 | 0x0200 | 0x0800 : 1 | 0x40 | 0x80;
+        int fd = open(path, flags, 0x180);
+        if (fd < 0)
+            throw new IOException($"Could not create {path} owner-only.");
+        _ = close(fd);
     }
 
     private static void RestrictWindows(string path)
@@ -109,7 +120,10 @@ internal static class Files
     }
 
     [DllImport("libc", SetLastError = true)]
-    private static extern int chmod(string path, uint mode);
+    private static extern int open(string path, int flags, uint mode);
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int close(int fd);
 
     [DllImport("advapi32", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(
