@@ -46,8 +46,8 @@ jobs:
       - name: Install gate
         if: ${{ !cancelled() }}
         run: |
-          curl -fsSL --retry 18 --retry-delay 10 -o "$RUNNER_TEMP/gate" https://github.com/Rethunk-Tech/rethunk-gate-cli/releases/download/v0.6.6/gate-linux-amd64
-          echo "4c43aa2bfbcd61c58a01c02f3cb924c76d9062dc8df10f289a22d258ca7267b6  $RUNNER_TEMP/gate" | sha256sum -c -
+          curl -fsSL --retry 18 --retry-delay 10 -o "$RUNNER_TEMP/gate" https://github.com/Rethunk-Tech/rethunk-gate-cli/releases/download/v0.9.0/gate-linux-amd64
+          echo "84011e4b8e9d181efba86ef616be07c8bf6a140b789ac204ef6bad11602f3f9d  $RUNNER_TEMP/gate" | sha256sum -c -
           chmod +x "$RUNNER_TEMP/gate"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - if: ${{ !cancelled() }}
