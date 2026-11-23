@@ -13,7 +13,7 @@
   <ItemGroup>
     <!-- BepInEx.Core would bring Mono.Cecil 0.11 through HarmonyX; the BepInExPack ships 0.10.4, which Patch's signature binds to. -->
     <PackageReference Include="BepInEx.BaseLib" Version="5.4.21" PrivateAssets="all" />
-    <PackageReference Include="Mono.Cecil" Version="0.10.4" PrivateAssets="all" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.6" PrivateAssets="all" />
     <PackageReference Include="UnityEngine.Modules" Version="6000.6.6" PrivateAssets="all" />
     <Compile Include="../MortarBepInExBridge/Json.cs" Link="Json.cs" />
     <Compile Include="../MortarBepInExBridge/Files.cs" Link="Files.cs" />
