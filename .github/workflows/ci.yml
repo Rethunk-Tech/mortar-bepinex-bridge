@@ -47,7 +47,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           curl -fsSL --retry 18 --retry-delay 10 -o "$RUNNER_TEMP/gate" https://github.com/Rethunk-Tech/rethunk-gate-cli/releases/download/v0.10.6/gate-linux-amd64
-          echo "8c9b03c88f3de7dfe7742cb785facc9d9535dcf4dee319e648e15f477a745bfc  $RUNNER_TEMP/gate" | sha256sum -c -
+          echo "6e8813c047cc745a5c296f5b360b60d92133425245b26b2c5efa5fe5eb9ec6b5  $RUNNER_TEMP/gate" | sha256sum -c -
           chmod +x "$RUNNER_TEMP/gate"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - if: ${{ !cancelled() }}
